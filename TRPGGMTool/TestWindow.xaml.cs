@@ -50,7 +50,13 @@ namespace TRPGGMTool
                 _allTests.Add(new SceneCreationTest());
                 _allTests.Add(new ParserGameSettingsTest());
                 _allTests.Add(new MetadataParserTest());
+                _allTests.Add(new ParserScenesTest());
+                _allTests.Add(new ParserProgressTest());
+                _allTests.Add(new ScenesParserDebugTest());
+
                 _allTests.Add(new ScenarioParsingIntegrationTest());
+
+
                 // TestRunnerに追加
                 foreach (var test in _allTests)
                 {

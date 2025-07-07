@@ -6,7 +6,7 @@ using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Scenario;
 using TRPGGMTool.Services.Parsers;
 
-namespace TRPGGMTool.Services
+namespace TRPGGMTool.Services.Persers
 {
     /// <summary>
     /// .scenarioファイル（マークダウン風）のメインパーサー
@@ -29,7 +29,7 @@ namespace TRPGGMTool.Services
         {
             _sectionParsers.Add(new MetadataParser());
             _sectionParsers.Add(new GameSettingsParser());
-            // 将来的にシーンパーサーなども追加
+            _sectionParsers.Add(new ScenesParser()); 
         }
 
         /// <summary>

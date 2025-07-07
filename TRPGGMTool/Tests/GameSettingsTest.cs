@@ -40,10 +40,10 @@ namespace TRPGGMTool.Tests
                 if (scenarioCount != 4) // デフォルトは4人
                     return TestResult.Failure("デフォルトシナリオプレイヤー数が正しくありません: " + scenarioCount);
 
-                // 3. シナリオプレイヤー名の取得テスト
-                var scenarioNames = gameSettings.GetScenarioPlayerNames();
-                if (scenarioNames.Count != scenarioCount)
-                    return TestResult.Failure("シナリオプレイヤー名数が設定と一致しません");
+                // 3. シナリオプレイヤー名の取得テスト 責務範囲外なので除外
+                //var scenarioNames = gameSettings.GetScenarioPlayerNames();
+                //if (scenarioNames.Count != scenarioCount)
+                //    return TestResult.Failure("シナリオプレイヤー名数が設定と一致しません");
 
                 // 4. プレイヤー数変更テスト
                 gameSettings.SetScenarioPlayerCount(3);

@@ -12,7 +12,7 @@ namespace TRPGGMTool.Models.Settings
         /// ソフトウェアがサポートする最大プレイヤー数（固定値）
         /// </summary>
         public const int MaxSupportedPlayers = 6;
-
+        public const int DefaultScenarioPlayerCount = 4;
         /// <summary>
         /// このシナリオで実際に使用するプレイヤー数
         /// </summary>
@@ -28,7 +28,7 @@ namespace TRPGGMTool.Models.Settings
         /// </summary>
         public PlayerSettings()
         {
-            ScenarioPlayerCount = 4; // デフォルトは4人
+            ScenarioPlayerCount = DefaultScenarioPlayerCount; // デフォルトは4人
             PlayerNames = new List<string>();
 
             // 最大数まで初期化

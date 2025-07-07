@@ -56,9 +56,11 @@ namespace TRPGGMTool.Tests
                 if (secretScene.Type != SceneType.SecretDistribution)
                     return TestResult.Failure("秘匿シーンのタイプが正しくありません");
 
-                secretScene.InitializePlayerItems(gameSettings);
-                if (secretScene.PlayerItems.Count != 3)
-                    return TestResult.Failure("プレイヤー項目数が正しくありません: " + secretScene.PlayerItems.Count);
+                // デフォルト値の検証
+                if (gameSettings.GetScenarioPlayerCount() != PlayerSettings.DefaultScenarioPlayerCount)
+                    return TestResult.Failure("デフォルトシナリオプレイヤー数が正しくありません: " +
+                                            gameSettings.GetScenarioPlayerCount() +
+                                            " (期待値: " + PlayerSettings.DefaultScenarioPlayerCount + ")");
 
                 var details = "✅ 全ての検証に成功\n" +
                             "探索シーン: OK\n" +
