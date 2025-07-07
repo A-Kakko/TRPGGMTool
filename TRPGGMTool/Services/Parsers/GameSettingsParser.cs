@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Scenario;
+using TRPGGMTool.Models.Settings;
 
 namespace TRPGGMTool.Services.Parsers
 {
@@ -49,47 +50,50 @@ namespace TRPGGMTool.Services.Parsers
 
         private int ParsePlayerSettings(string[] lines, int startIndex, Scenario scenario)
         {
-            var playerNames = new string[6]; // 固定6名
+            var playerNames = new string[PlayerSettings.MaxSupportedPlayers];
+            int actualPlayerCount = 0;
 
             for (int i = startIndex; i < lines.Length; i++)
             {
                 var line = lines[i].Trim();
 
-                // 次のサブセクション（### で始まる）または次のセクション（## で始まる）が来たら終了
                 if (line.StartsWith("###") || line.StartsWith("##"))
                     return i - 1;
 
-                // 空行はスキップ
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
-                // 番号付きリスト形式を解析 (例: "1. 田中太郎")
+                // 番号付きリスト形式を解析
                 if (line.Length > 0 && char.IsDigit(line[0]))
                 {
-                    var parts = line.Split(new[] { ". " }, 2, System.StringSplitOptions.None);
+                    var parts = line.Split(new[] { ". " }, 2, StringSplitOptions.None);
                     if (parts.Length == 2)
                     {
-                        int playerIndex;
-                        if (int.TryParse(parts[0], out playerIndex) && playerIndex >= 1 && playerIndex <= 6)
+                        if (int.TryParse(parts[0], out var playerIndex) &&
+                            playerIndex >= 1 && playerIndex <= PlayerSettings.MaxSupportedPlayers)
                         {
                             var playerName = parts[1].Trim();
                             if (playerName != "(空)" && !string.IsNullOrWhiteSpace(playerName))
                             {
                                 playerNames[playerIndex - 1] = playerName;
+                                actualPlayerCount = Math.Max(actualPlayerCount, playerIndex);
                             }
                         }
                     }
                 }
             }
 
-            // プレイヤー設定に反映
-            for (int j = 0; j < 6; j++)
+            // GameSettingsに反映
+            for (int j = 0; j < PlayerSettings.MaxSupportedPlayers; j++)
             {
                 if (!string.IsNullOrEmpty(playerNames[j]))
                 {
                     scenario.GameSettings.PlayerSettings.PlayerNames[j] = playerNames[j];
                 }
             }
+
+            // シナリオプレイヤー数を動的に設定
+            scenario.GameSettings.PlayerSettings.SetScenarioPlayerCount(actualPlayerCount);
 
             return lines.Length;
         }
