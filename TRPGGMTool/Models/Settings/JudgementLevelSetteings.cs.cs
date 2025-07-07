@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace TRPGGMTool.Models
+namespace TRPGGMTool.Models.Settings
 {
     /// <summary>
     /// 判定レベルの設定を管理するクラス
