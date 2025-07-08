@@ -45,7 +45,7 @@ namespace TRPGGMTool
 
 
                 // リストに追加
-                _allTests.Add(new ScenarioParsingMainIntegrationTest());
+                _allTests.Add(new ScenarioManagerIntegrationTest());
 
 
 
