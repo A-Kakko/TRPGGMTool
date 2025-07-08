@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
+using TRPGGMTool.Models.DataAccess.ParseData;
 using TRPGGMTool.Models.Parsing;
 using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Settings;
@@ -14,7 +15,7 @@ namespace TRPGGMTool.Services.Parsers
     /// </summary>
     public class GameSettingsParser : ParserBase, IScenarioSectionParser
     {
-        public string SectionName => "FlexiblGameSettingsParser";
+        public string SectionName => "GameSettingsParser";
 
         public GameSettingsParser(FormatConfiguration formatConfig) : base(formatConfig)
         {
@@ -30,13 +31,13 @@ namespace TRPGGMTool.Services.Parsers
 
 
         /// <summary>
-        /// 新しい戻り値方式でのパース処理
+        /// ゲーム設定セクションを解析して結果データを返す
         /// </summary>
         public ParseSectionResult ParseSection(string[] lines, int startIndex)
         {
             try
             {
-                var gameSettings = new GameSettings();
+                var gameSettingsData = new GameSettingsData();
                 int i = startIndex;
 
                 while (i < lines.Length)
@@ -57,11 +58,15 @@ namespace TRPGGMTool.Services.Parsers
                     // サブセクションを解析
                     if (TryMatchAnyPattern(line, _formatConfig.Sections.PlayersSubHeaders, out _))
                     {
-                        i = ParsePlayerSettings(lines, i + 1, gameSettings);
+                        var result = ParsePlayerSettings(lines, i + 1);
+                        gameSettingsData.PlayerData = result.data;
+                        i = result.nextIndex;
                     }
                     else if (TryMatchAnyPattern(line, _formatConfig.Sections.JudgmentSubHeaders, out _))
                     {
-                        i = ParseJudgmentLevelSettings(lines, i + 1, gameSettings);
+                        var result = ParseJudgmentLevelSettings(lines, i + 1);
+                        gameSettingsData.JudgmentData = result.data;
+                        i = result.nextIndex;
                     }
                     else
                     {
@@ -69,7 +74,7 @@ namespace TRPGGMTool.Services.Parsers
                     }
                 }
 
-                return ParseSectionResult.CreateSuccess(gameSettings, i);
+                return ParseSectionResult.CreateSuccess(gameSettingsData, i);
             }
             catch (Exception ex)
             {
@@ -77,9 +82,15 @@ namespace TRPGGMTool.Services.Parsers
             }
         }
 
-        private int ParsePlayerSettings(string[] lines, int startIndex, GameSettings gameSettings)
+        /// <summary>
+        /// プレイヤー設定を解析して結果データを返す
+        /// </summary>
+        /// <param name="lines">解析対象行配列</param>
+        /// <param name="startIndex">開始インデックス</param>
+        /// <returns>プレイヤー設定データと次のインデックス</returns>
+        private (PlayerSettingsData data, int nextIndex) ParsePlayerSettings(string[] lines, int startIndex)
         {
-            var playerNames = new string[PlayerSettings.MaxSupportedPlayers];
+            var data = new PlayerSettingsData();
             int actualPlayerCount = 0;
             int i = startIndex;
 
@@ -117,7 +128,18 @@ namespace TRPGGMTool.Services.Parsers
                         if (!IsEmptyPlayerMarker(playerName))
                         {
                             Debug.WriteLine($"  → プレイヤー登録: [{playerIndex - 1}] = {playerName}");
-                            playerNames[playerIndex - 1] = playerName;
+
+                            // リストのサイズを調整
+                            while (data.PlayerNames.Count < playerIndex)
+                            {
+                                data.PlayerNames.Add("");
+                            }
+
+                            if (playerIndex <= data.PlayerNames.Count)
+                            {
+                                data.PlayerNames[playerIndex - 1] = playerName;
+                            }
+
                             actualPlayerCount = Math.Max(actualPlayerCount, playerIndex);
                         }
                         else
@@ -138,48 +160,29 @@ namespace TRPGGMTool.Services.Parsers
                 i++;
             }
 
+            data.ActualPlayerCount = actualPlayerCount;
+
             Debug.WriteLine($"プレイヤー設定結果:");
-            for (int j = 0; j < PlayerSettings.MaxSupportedPlayers; j++)
+            for (int j = 0; j < data.PlayerNames.Count; j++)
             {
-                if (!string.IsNullOrEmpty(playerNames[j]))
-                {
-                    Debug.WriteLine($"  [{j}] = {playerNames[j]}");
-                    gameSettings.PlayerSettings.PlayerNames[j] = playerNames[j];
-                }
+                Debug.WriteLine($"  [{j}] = {data.PlayerNames[j]}");
             }
             Debug.WriteLine($"実際のプレイヤー数: {actualPlayerCount}");
-            gameSettings.PlayerSettings.SetScenarioPlayerCount(actualPlayerCount);
-
             Debug.WriteLine($"ParsePlayerSettings終了、次の位置: {i}");
             Debug.WriteLine("".PadRight(50, '='));
 
-            // GameSettingsを設定後に確認
-            for (int j = 0; j < PlayerSettings.MaxSupportedPlayers; j++)
-            {
-                if (!string.IsNullOrEmpty(playerNames[j]))
-                {
-                    Debug.WriteLine($"  設定前: gameSettings.PlayerSettings.PlayerNames[{j}] = {gameSettings.PlayerSettings.PlayerNames[j]}");
-                    gameSettings.PlayerSettings.PlayerNames[j] = playerNames[j];
-                    Debug.WriteLine($"  設定後: gameSettings.PlayerSettings.PlayerNames[{j}] = {gameSettings.PlayerSettings.PlayerNames[j]}");
-                }
-            }
-
-            // 最終的な確認
-            Debug.WriteLine("=== 最終的なPlayerNames ===");
-            for (int j = 0; j < PlayerSettings.MaxSupportedPlayers; j++)
-            {
-                Debug.WriteLine($"PlayerNames[{j}] = {gameSettings.PlayerSettings.PlayerNames[j]}");
-            }
-
-            return i;
+            return (data, i);
         }
 
         /// <summary>
-        /// 判定レベル設定を解析
+        /// 判定レベル設定を解析して結果データを返す
         /// </summary>
-        private int ParseJudgmentLevelSettings(string[] lines, int startIndex, GameSettings gameSettings)
+        /// <param name="lines">解析対象行配列</param>
+        /// <param name="startIndex">開始インデックス</param>
+        /// <returns>判定レベル設定データと次のインデックス</returns>
+        private (JudgmentLevelData data, int nextIndex) ParseJudgmentLevelSettings(string[] lines, int startIndex)
         {
-            var levelNames = new List<string>();
+            var data = new JudgmentLevelData();
             int i = startIndex;
 
             while (i < lines.Length)
@@ -202,24 +205,14 @@ namespace TRPGGMTool.Services.Parsers
                 {
                     if (!string.IsNullOrWhiteSpace(levelName))
                     {
-                        levelNames.Add(levelName);
+                        data.LevelNames.Add(levelName);
                     }
                 }
 
                 i++;
             }
 
-            // 判定レベル設定に反映
-            if (levelNames.Count > 0)
-            {
-                gameSettings.JudgmentLevelSettings.LevelNames.Clear();
-                foreach (var name in levelNames)
-                {
-                    gameSettings.JudgmentLevelSettings.LevelNames.Add(name);
-                }
-            }
-
-            return i;
+            return (data, i);
         }
 
         /// <summary>

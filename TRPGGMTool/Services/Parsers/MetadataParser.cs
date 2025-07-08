@@ -1,6 +1,7 @@
 ﻿using System;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
+using TRPGGMTool.Models.DataAccess.ParseData;
 using TRPGGMTool.Models.Parsing;
 using TRPGGMTool.Models.ScenarioModels;
 
@@ -27,13 +28,13 @@ namespace TRPGGMTool.Services.Parsers
 
 
         /// <summary>
-        /// 新しい戻り値方式でのパース処理
+        /// メタデータセクションを解析して結果データを返す
         /// </summary>
         public ParseSectionResult ParseSection(string[] lines, int startIndex)
         {
             try
             {
-                var metadata = new ScenarioMetadata();
+                var data = new ScenarioMetadataData();
                 int i = startIndex;
 
                 while (i < lines.Length)
@@ -54,13 +55,13 @@ namespace TRPGGMTool.Services.Parsers
                     // キー:値 形式を解析
                     if (TryParseKeyValue(line, out var key, out var value))
                     {
-                        ParseMetadataKeyValue(key, value, metadata);
+                        ParseMetadataKeyValue(key, value, data);
                     }
 
                     i++;
                 }
 
-                return ParseSectionResult.CreateSuccess(metadata, i);
+                return ParseSectionResult.CreateSuccess(data, i);
             }
             catch (Exception ex)
             {
@@ -69,9 +70,9 @@ namespace TRPGGMTool.Services.Parsers
         }
 
         /// <summary>
-        /// メタデータのキー・値ペアを解析
+        /// メタデータのキー・値ペアを解析してデータオブジェクトに設定
         /// </summary>
-        private void ParseMetadataKeyValue(string key, string value, ScenarioMetadata metadata)
+        private void ParseMetadataKeyValue(string key, string value, ScenarioMetadataData data)
         {
             if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(value))
                 return;
@@ -85,14 +86,14 @@ namespace TRPGGMTool.Services.Parsers
                 case "タイトル":
                 case "名前":
                 case "name":
-                    metadata.SetTitle(value);
+                    data.Title = value;
                     break;
 
                 case "author":
                 case "作成者":
                 case "作者":
                 case "creator":
-                    metadata.Author = value;
+                    data.Author = value;
                     break;
 
                 case "created":
@@ -100,7 +101,7 @@ namespace TRPGGMTool.Services.Parsers
                 case "作成日":
                 case "作成日時":
                     if (DateTime.TryParse(value, out var createdDate))
-                        metadata.CreatedAt = createdDate;
+                        data.CreatedAt = createdDate;
                     break;
 
                 case "modified":
@@ -108,20 +109,20 @@ namespace TRPGGMTool.Services.Parsers
                 case "更新日":
                 case "更新日時":
                     if (DateTime.TryParse(value, out var modifiedDate))
-                        metadata.LastModifiedAt = modifiedDate;
+                        data.LastModifiedAt = modifiedDate;
                     break;
 
                 case "version":
                 case "ver":
                 case "バージョン":
-                    metadata.Version = value;
+                    data.Version = value;
                     break;
 
                 case "description":
                 case "説明":
                 case "概要":
                 case "summary":
-                    metadata.Description = value;
+                    data.Description = value;
                     break;
 
                 default:

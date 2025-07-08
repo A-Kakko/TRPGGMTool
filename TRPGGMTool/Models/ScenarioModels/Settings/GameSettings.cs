@@ -1,4 +1,6 @@
-﻿namespace TRPGGMTool.Models.Settings
+﻿using TRPGGMTool.Models.DataAccess.ParseData;
+
+namespace TRPGGMTool.Models.Settings
 {
     /// <summary>
     /// ゲーム全体の設定を管理するクラス
@@ -22,6 +24,19 @@
         {
             PlayerSettings = new PlayerSettings();
             JudgmentLevelSettings = new JudgmentLevelSettings();
+        }
+
+        /// <summary>
+        /// パース結果からゲーム設定を初期化
+        /// </summary>
+        /// <param name="data">ゲーム設定の解析結果</param>
+        public GameSettings(GameSettingsData data)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            PlayerSettings = new PlayerSettings(data.PlayerData);
+            JudgmentLevelSettings = new JudgmentLevelSettings(data.JudgmentData);
         }
 
         /// <summary>

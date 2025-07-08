@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using TRPGGMTool.Models.DataAccess.ParseData;
 
 namespace TRPGGMTool.Models.Settings
 {
@@ -31,6 +32,28 @@ namespace TRPGGMTool.Models.Settings
         {
             LevelNames = new List<string> { "大成功", "成功", "失敗", "大失敗" };
             DefaultLevelIndex = 0; // 「大成功」をデフォルトに
+        }
+
+        /// <summary>
+        /// パース結果から判定レベル設定を初期化
+        /// </summary>
+        /// <param name="data">判定レベル設定の解析結果</param>
+        public JudgmentLevelSettings(JudgmentLevelData data)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            if (data.LevelNames.Count > 0)
+            {
+                LevelNames = new List<string>(data.LevelNames);
+            }
+            else
+            {
+                // デフォルト値
+                LevelNames = new List<string> { "大成功", "成功", "失敗", "大失敗" };
+            }
+
+            DefaultLevelIndex = 0; // デフォルトは最初のレベル
         }
 
         /// <summary>

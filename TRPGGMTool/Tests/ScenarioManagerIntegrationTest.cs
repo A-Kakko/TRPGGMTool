@@ -253,48 +253,163 @@ namespace TRPGGMTool.Tests
         }
 
         /// <summary>
-        /// シナリオデータ構造の詳細検証
+        /// シナリオデータ構造の詳細検証（新データフロー対応版）
         /// </summary>
         private (bool isValid, string error) ValidateScenarioData(TRPGGMTool.Models.ScenarioModels.Scenario scenario, StringBuilder debug)
         {
-            debug.AppendLine("データ構造詳細検証開始...");
+            debug.AppendLine("=== 新データフロー検証開始 ===");
 
             // メタデータ検証
             if (scenario.Metadata == null)
                 return (false, "Metadataがnull");
 
+            debug.AppendLine("📋 メタデータ検証:");
             debug.AppendLine($"  タイトル: '{scenario.Metadata.Title}'");
             debug.AppendLine($"  作成者: '{scenario.Metadata.Author}'");
             debug.AppendLine($"  バージョン: '{scenario.Metadata.Version}'");
+            debug.AppendLine($"  説明: '{scenario.Metadata.Description}'");
 
             if (scenario.Metadata.Title != "古城の謎")
-                return (false, $"タイトル不一致: '{scenario.Metadata.Title}'");
+                return (false, $"タイトル不一致: '{scenario.Metadata.Title}' (期待値: '古城の謎')");
 
             // ゲーム設定検証
             if (scenario.GameSettings == null)
                 return (false, "GameSettingsがnull");
 
-            var playerCount = scenario.GameSettings.GetScenarioPlayerCount();
-            var playerNames = scenario.GameSettings.GetScenarioPlayerNames();
-            var judgmentCount = scenario.GameSettings.JudgmentLevelSettings.LevelCount;
+            debug.AppendLine("\n🎮 ゲーム設定検証:");
 
-            debug.AppendLine($"  プレイヤー数: {playerCount}");
-            debug.AppendLine($"  プレイヤー名: {string.Join(", ", playerNames)}");
-            debug.AppendLine($"  判定レベル数: {judgmentCount}");
+            // プレイヤー設定の詳細検証
+            var playerSettings = scenario.GameSettings.PlayerSettings;
+            if (playerSettings == null)
+                return (false, "PlayerSettingsがnull");
 
-            if (judgmentCount != 4)
-                return (false, $"判定レベル数不一致: {judgmentCount}");
+            var scenarioPlayerCount = playerSettings.ScenarioPlayerCount;
+            var allPlayerNames = playerSettings.PlayerNames;
+            var scenarioPlayerNames = playerSettings.GetScenarioPlayerNames();
+
+            debug.AppendLine($"  シナリオプレイヤー数: {scenarioPlayerCount}");
+            debug.AppendLine($"  全プレイヤー名数: {allPlayerNames?.Count ?? 0}");
+            debug.AppendLine($"  シナリオプレイヤー名数: {scenarioPlayerNames.Count}");
+
+            // プレイヤー名の詳細確認
+            debug.AppendLine("  プレイヤー名詳細:");
+            if (allPlayerNames != null)
+            {
+                for (int i = 0; i < Math.Min(allPlayerNames.Count, 6); i++)
+                {
+                    var playerName = allPlayerNames[i];
+                    var isScenarioPlayer = i < scenarioPlayerCount;
+                    debug.AppendLine($"    [{i}] '{playerName}' (シナリオ参加: {isScenarioPlayer})");
+                }
+            }
+
+            // 期待されるプレイヤー名の確認
+            var expectedPlayers = new[] { "田中太郎", "佐藤花子", "鈴木一郎" };
+            debug.AppendLine("  期待値との比較:");
+            for (int i = 0; i < expectedPlayers.Length; i++)
+            {
+                if (i < scenarioPlayerNames.Count)
+                {
+                    var actual = scenarioPlayerNames[i];
+                    var expected = expectedPlayers[i];
+                    debug.AppendLine($"    [{i}] 実際: '{actual}' / 期待: '{expected}' → {(actual == expected ? "✅" : "❌")}");
+
+                    if (actual != expected)
+                        return (false, $"プレイヤー名不一致: [{i}] '{actual}' != '{expected}'");
+                }
+                else
+                {
+                    return (false, $"プレイヤー[{i}]が存在しません (期待値: '{expectedPlayers[i]}')");
+                }
+            }
+
+            // 判定レベル設定の詳細検証
+            var judgmentSettings = scenario.GameSettings.JudgmentLevelSettings;
+            if (judgmentSettings == null)
+                return (false, "JudgmentLevelSettingsがnull");
+
+            var levelNames = judgmentSettings.LevelNames;
+            var levelCount = judgmentSettings.LevelCount;
+            var defaultIndex = judgmentSettings.DefaultLevelIndex;
+
+            debug.AppendLine($"\n🎲 判定レベル設定検証:");
+            debug.AppendLine($"  レベル数: {levelCount}");
+            debug.AppendLine($"  デフォルトインデックス: {defaultIndex}");
+            debug.AppendLine("  レベル名詳細:");
+
+            if (levelNames != null)
+            {
+                for (int i = 0; i < levelNames.Count; i++)
+                {
+                    debug.AppendLine($"    [{i}] '{levelNames[i]}'");
+                }
+            }
+
+            // 期待される判定レベルの確認
+            var expectedLevels = new[] {"中成功","まあ失敗" };
+            if (levelCount != expectedLevels.Length)
+                return (false, $"判定レベル数不一致: {levelCount} != {expectedLevels.Length}");
+
+            debug.AppendLine("  期待値との比較:");
+            for (int i = 0; i < expectedLevels.Length; i++)
+            {
+                if (i < levelNames.Count)
+                {
+                    var actual = levelNames[i];
+                    var expected = expectedLevels[i];
+                    debug.AppendLine($"    [{i}] 実際: '{actual}' / 期待: '{expected}' → {(actual == expected ? "✅" : "❌")}");
+
+                    if (actual != expected)
+                        return (false, $"判定レベル名不一致: [{i}] '{actual}' != '{expected}'");
+                }
+                else
+                {
+                    return (false, $"判定レベル[{i}]が存在しません (期待値: '{expectedLevels[i]}')");
+                }
+            }
 
             // シーン検証
             if (scenario.Scenes == null || scenario.Scenes.Count == 0)
                 return (false, "シーンがない");
 
+            debug.AppendLine($"\n🎭 シーン検証:");
             debug.AppendLine($"  シーン数: {scenario.Scenes.Count}");
 
-            debug.AppendLine("✅ データ構造詳細検証完了");
+            var expectedScenes = new[]
+            {
+        ("古城の入り口", SceneType.Exploration),
+        ("個人情報開示", SceneType.SecretDistribution),
+        ("基本情報", SceneType.Narrative)
+    };
+
+            debug.AppendLine("  シーン詳細:");
+            for (int i = 0; i < scenario.Scenes.Count; i++)
+            {
+                var scene = scenario.Scenes[i];
+                debug.AppendLine($"    [{i}] 名前: '{scene.Name}', タイプ: {scene.Type}, 項目数: {scene.Items?.Count ?? 0}");
+            }
+
+            debug.AppendLine("  期待値との比較:");
+            for (int i = 0; i < Math.Min(expectedScenes.Length, scenario.Scenes.Count); i++)
+            {
+                var actualScene = scenario.Scenes[i];
+                var (expectedName, expectedType) = expectedScenes[i];
+
+                var nameMatch = actualScene.Name == expectedName;
+                var typeMatch = actualScene.Type == expectedType;
+
+                debug.AppendLine($"    [{i}] 名前: '{actualScene.Name}' == '{expectedName}' → {(nameMatch ? "✅" : "❌")}");
+                debug.AppendLine($"         タイプ: {actualScene.Type} == {expectedType} → {(typeMatch ? "✅" : "❌")}");
+
+                if (!nameMatch)
+                    return (false, $"シーン名不一致: [{i}] '{actualScene.Name}' != '{expectedName}'");
+                if (!typeMatch)
+                    return (false, $"シーンタイプ不一致: [{i}] {actualScene.Type} != {expectedType}");
+            }
+
+            debug.AppendLine("\n✅ 新データフロー検証完了 - すべてOK");
             return (true, "");
         }
-
         /// <summary>
         /// 往復整合性の検証
         /// </summary>

@@ -1,4 +1,5 @@
 ﻿using System;
+using TRPGGMTool.Models.DataAccess.ParseData;
 
 namespace TRPGGMTool.Models.ScenarioModels
 {
@@ -49,6 +50,24 @@ namespace TRPGGMTool.Models.ScenarioModels
             Version = "1.0";
             Author = "";
             Description = "";
+        }
+
+        /// <summary>
+        /// パース結果からメタデータを初期化
+        /// </summary>
+        /// <param name="data">メタデータの解析結果</param>
+        public ScenarioMetadata(ScenarioMetadataData data)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            Title = string.IsNullOrWhiteSpace(data.Title) ? "新しいシナリオ" : data.Title;
+            Author = data.Author ?? "未設定";
+            Description = data.Description ?? "未設定";
+            Version = string.IsNullOrWhiteSpace(data.Version) ? "1.0" : data.Version;
+
+            CreatedAt = data.CreatedAt ?? DateTime.Now;
+            LastModifiedAt = data.LastModifiedAt ?? DateTime.Now;
         }
 
         /// <summary>

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
+using TRPGGMTool.Models.DataAccess.ParseData;
 using TRPGGMTool.Models.Parsing;
 using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Scenes;
@@ -206,13 +207,13 @@ namespace TRPGGMTool.Models.Parsing
             switch (parser.SectionName)
             {
                 case "MetadataParser":
-                    if (data is ScenarioMetadata parsedMetadata)
-                        metadata = parsedMetadata;
+                    if (data is ScenarioMetadataData metadataData)
+                        metadata = new ScenarioMetadata(metadataData);
                     break;
 
-                case "GameSettingsParser":
-                    if (data is GameSettings parsedGameSettings)
-                        gameSettings = parsedGameSettings;
+                case "GameSettingsParser": // 既存のSectionNameに合わせる
+                    if (data is GameSettingsData gameSettingsData)
+                        gameSettings = new GameSettings(gameSettingsData);
                     break;
 
                 case "ScenesParser":

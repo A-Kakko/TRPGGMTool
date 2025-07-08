@@ -1,11 +1,13 @@
-﻿using TRPGGMTool.Interfaces;
+﻿using System.Diagnostics;
+using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Common;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.DataAccess.ParseData;
 using TRPGGMTool.Models.Parsing;
+using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Validation;
 using TRPGGMTool.Services;
 using TRPGGMTool.Services.FileIO;
-using System.Diagnostics;
+
 
 namespace TRPGGMTool.Models.DataAccess
 {
@@ -61,7 +63,7 @@ namespace TRPGGMTool.Models.DataAccess
                 {
                     return OperationResult<Scenario>.Failure("シナリオの構築に失敗しました");
                 }
-
+                
                 // 4. ファイル情報を設定
                 scenario.SetFilePath(filePath);
                 scenario.MarkAsSaved();
@@ -140,6 +142,12 @@ namespace TRPGGMTool.Models.DataAccess
             {
                 scenario.Metadata = parseResults.Metadata;
             }
+            else
+            {
+                // デフォルト値でMetadataを作成
+                var defaultMetadataData = new ScenarioMetadataData();
+                scenario.Metadata = new ScenarioMetadata(defaultMetadataData);
+            }
 
             // タイトルが個別に設定されている場合は反映
             if (!string.IsNullOrEmpty(parseResults.Title))
@@ -155,7 +163,8 @@ namespace TRPGGMTool.Models.DataAccess
             else
             {
                 // デフォルト値で初期化
-                scenario.GameSettings = new Models.Settings.GameSettings();
+                var defaultGameSettingsData = new GameSettingsData();
+                scenario.GameSettings = new Models.Settings.GameSettings(defaultGameSettingsData);
             }
 
             // シーンを追加（エラー時は無視）

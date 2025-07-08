@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using TRPGGMTool.Models.DataAccess.ParseData;
 
 namespace TRPGGMTool.Models.Settings
 {
@@ -35,6 +36,32 @@ namespace TRPGGMTool.Models.Settings
             for (int i = 0; i < MaxSupportedPlayers; i++)
             {
                 PlayerNames.Add("プレイヤー" + (i + 1));
+            }
+        }
+
+        /// <summary>
+        /// パース結果からプレイヤー設定を初期化
+        /// </summary>
+        /// <param name="data">プレイヤー設定の解析結果</param>
+        public PlayerSettings(PlayerSettingsData data)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            ScenarioPlayerCount = Math.Max(1, Math.Min(data.ActualPlayerCount, MaxSupportedPlayers));
+            PlayerNames = new List<string>();
+
+            // 最大数まで初期化
+            for (int i = 0; i < MaxSupportedPlayers; i++)
+            {
+                if (i < data.PlayerNames.Count && !string.IsNullOrWhiteSpace(data.PlayerNames[i]))
+                {
+                    PlayerNames.Add(data.PlayerNames[i]);
+                }
+                else
+                {
+                    PlayerNames.Add($"プレイヤー{i + 1}");
+                }
             }
         }
 
