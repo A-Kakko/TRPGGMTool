@@ -1,13 +1,13 @@
 ﻿using System.IO;
 using System.Linq;
+using System.Text;
 using TRPGGMTool.Interfaces;
-using TRPGGMTool.Models.Common;
 
 namespace TRPGGMTool.Services.FileIO
 {
     /// <summary>
     /// ファイル入出力の共通操作を提供するサービス
-    /// 様々なファイル形式に対応可能な汎用実装
+    /// 標準APIのみを使用したシンプルな実装
     /// </summary>
     public class FileIOService : IFileIOService
     {
@@ -24,7 +24,8 @@ namespace TRPGGMTool.Services.FileIO
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"ファイルが見つかりません: {filePath}");
 
-            return await FileEncodingHelper.ReadFileWithEncodingDetectionAsync(filePath);
+            var content = await File.ReadAllTextAsync(filePath);
+            return content ?? string.Empty;
         }
 
         /// <summary>
@@ -35,10 +36,26 @@ namespace TRPGGMTool.Services.FileIO
         /// <returns>保存成功の場合true</returns>
         public async Task<bool> WriteFileAsync(string filePath, string content)
         {
-            if (string.IsNullOrWhiteSpace(filePath))
-                throw new ArgumentException("ファイルパスが無効です", nameof(filePath));
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath))
+                    throw new ArgumentException("ファイルパスが無効です", nameof(filePath));
 
-            return await FileEncodingHelper.WriteFileAsUtf8Async(filePath, content ?? string.Empty);
+                // ディレクトリが存在しない場合は作成
+                var directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                // UTF-8で保存
+                await File.WriteAllTextAsync(filePath, content ?? string.Empty, Encoding.UTF8);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>

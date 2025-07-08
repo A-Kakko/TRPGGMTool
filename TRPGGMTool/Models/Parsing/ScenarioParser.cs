@@ -1,36 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.Parsing;
 using TRPGGMTool.Models.ScenarioModels;
-
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.Settings;
 using TRPGGMTool.Services.Parsers;
 
-namespace TRPGGMTool.Services
+namespace TRPGGMTool.Models.Parsing
 {
     /// <summary>
-    /// .scenarioファイル（マークダウン風）のメインパーサー
-    /// 戻り値方式で各セクションの解析を専用パーサーに委譲
+    /// Markdownテキストのパース専用クラス
+    /// ファイルI/Oは行わず、テキスト解析のみに専念
     /// </summary>
-    public class ScenarioFileParser
+    public class ScenarioParser
     {
         private readonly List<IScenarioSectionParser> _sectionParsers;
         private readonly FormatConfiguration _formatConfig;
 
-        public ScenarioFileParser()
+        public ScenarioParser()
         {
             _formatConfig = FormatConfigurationFactory.CreateDefault();
             _sectionParsers = new List<IScenarioSectionParser>();
             InitializeParsers();
         }
 
-        public ScenarioFileParser(FormatConfiguration formatConfig)
+        public ScenarioParser(FormatConfiguration formatConfig)
         {
             _formatConfig = formatConfig ?? FormatConfigurationFactory.CreateDefault();
             _sectionParsers = new List<IScenarioSectionParser>();
@@ -48,34 +45,23 @@ namespace TRPGGMTool.Services
         }
 
         /// <summary>
-        /// ファイルからシナリオを読み込み
+        /// Markdownテキストからシナリオを解析（ファイルI/O削除）
         /// </summary>
-        public async Task<ScenarioParseResults> ParseFromFileAsync(string filePath)
-        {
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("ファイルが見つかりません: " + filePath);
-
-            // 複数エンコーディングでの読み込み試行
-            var content = await ReadFileWithEncodingDetection(filePath);
-            return ParseFromText(content);
-        }
-
-        /// <summary>
-        /// テキストからシナリオを解析（新しい戻り値方式）
-        /// </summary>
-        public ScenarioParseResults ParseFromText(string content)
+        /// <param name="markdownContent">解析対象のMarkdownテキスト</param>
+        /// <returns>解析結果</returns>
+        public ScenarioParseResults ParseFromText(string markdownContent)
         {
             var results = new ScenarioParseResults();
 
             try
             {
-                if (string.IsNullOrWhiteSpace(content))
+                if (string.IsNullOrWhiteSpace(markdownContent))
                 {
                     results.Errors.Add("入力コンテンツが空です");
                     return results;
                 }
 
-                var lines = content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var lines = markdownContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
                 // タイトル解析
                 var titleResult = ParseTitle(lines);
@@ -221,72 +207,6 @@ namespace TRPGGMTool.Services
                     if (data is List<Scene> parsedScenes)
                         scenes.AddRange(parsedScenes);
                     break;
-            }
-        }
-
-        /// <summary>
-        /// パース結果からScenarioオブジェクトを構築
-        /// </summary>
-        private Scenario BuildScenarioFromResults(ScenarioParseResults results)
-        {
-            var scenario = new Scenario();
-
-            // 基本データを設定
-            if (results.Metadata != null)
-            {
-                scenario.Metadata = results.Metadata;
-            }
-
-            // タイトルが個別に設定されている場合は反映
-            if (!string.IsNullOrEmpty(results.Title) && string.IsNullOrEmpty(scenario.Metadata.Title))
-            {
-                scenario.Metadata.SetTitle(results.Title);
-            }
-
-            if (results.GameSettings != null)
-            {
-                scenario.GameSettings = results.GameSettings;
-            }
-
-            // シーンを追加
-            foreach (var scene in results.Scenes)
-            {
-                scenario.AddScene(scene);
-            }
-
-            return scenario;
-        }
-
-        /// <summary>
-        /// 複数エンコーディングでファイル読み込み
-        /// </summary>
-        private async Task<string> ReadFileWithEncodingDetection(string filePath)
-        {
-            // UTF-8 with BOMで試行
-            try
-            {
-                return await File.ReadAllTextAsync(filePath, new UTF8Encoding(true));
-            }
-            catch
-            {
-                // UTF-8 without BOMで試行
-                try
-                {
-                    return await File.ReadAllTextAsync(filePath, new UTF8Encoding(false));
-                }
-                catch
-                {
-                    // Shift_JISで試行
-                    try
-                    {
-                        return await File.ReadAllTextAsync(filePath, Encoding.GetEncoding("shift_jis"));
-                    }
-                    catch
-                    {
-                        // 最後の手段：デフォルトエンコーディング
-                        return await File.ReadAllTextAsync(filePath);
-                    }
-                }
             }
         }
     }

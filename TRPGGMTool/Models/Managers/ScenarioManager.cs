@@ -1,47 +1,52 @@
-﻿using TRPGGMTool.Interfaces;
-using TRPGGMTool.Models.ScenarioModels;
+﻿using System.Diagnostics;
+using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Common;
+using TRPGGMTool.Models.DataAccess;
+using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.Validation;
 using TRPGGMTool.Services.FileIO;
-using System.Diagnostics;
-
 
 namespace TRPGGMTool.Models.Managers
 {
     /// <summary>
-    /// シナリオの統括管理を行うマネージャー（Models層）
-    /// Services層の機能を使ってRepository との橋渡しを担当
+    /// シナリオ関連のビジネスロジックを統括
+    /// ViewModelからの唯一の窓口として機能
     /// </summary>
     public class ScenarioManager
     {
         private readonly IScenarioRepository _repository;
-        private readonly IScenarioService _scenarioService;
-        private readonly IFileIOService _fileIOService;
+        private readonly IScenarioDataGateway _dataGateway;
+
+        /// <summary>
+        /// シナリオの変更を通知するイベント
+        /// </summary>
+        public event EventHandler? ScenarioChanged;
+
+        /// <summary>
+        /// シナリオの保存状態変更を通知するイベント
+        /// </summary>
+        public event EventHandler? SaveStateChanged;
 
         /// <summary>
         /// コンストラクタ（DI対応）
         /// </summary>
-        public ScenarioManager(
-            IScenarioRepository repository,
-            IScenarioService scenarioService,
-            IFileIOService fileIOService)
+        public ScenarioManager(IScenarioRepository repository, IScenarioDataGateway dataGateway)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            _scenarioService = scenarioService ?? throw new ArgumentNullException(nameof(scenarioService));
-            _fileIOService = fileIOService ?? throw new ArgumentNullException(nameof(fileIOService));
+            _dataGateway = dataGateway ?? throw new ArgumentNullException(nameof(dataGateway));
         }
 
         /// <summary>
-        /// テスト用コンストラクタ
+        /// デフォルトコンストラクタ（テスト・スタンドアロン用）
         /// </summary>
         public ScenarioManager()
         {
             _repository = new Repositories.ScenarioRepository();
-            _scenarioService = new ScenarioService();
-            _fileIOService = new FileIOService();
+            _dataGateway = new ScenarioDataGateway();
         }
 
         /// <summary>
-        /// 現在のシナリオ
+        /// 現在読み込まれているシナリオ
         /// </summary>
         public Scenario? CurrentScenario => _repository.CurrentScenario;
 
@@ -51,45 +56,37 @@ namespace TRPGGMTool.Models.Managers
         public bool IsScenarioLoaded => _repository.IsScenarioLoaded;
 
         /// <summary>
+        /// 現在のシナリオに未保存の変更があるかどうか
+        /// </summary>
+        public bool HasUnsavedChanges => CurrentScenario?.HasUnsavedChanges ?? false;
+
+        /// <summary>
         /// ファイルからシナリオを読み込み、Repositoryに設定
         /// </summary>
-        /// <param name="filePath">ファイルパス</param>
+        /// <param name="filePath">読み込み対象ファイルパス</param>
         /// <returns>読み込み結果</returns>
-        public async Task<ScenarioLoadResult> LoadScenarioAsync(string filePath)
+        public async Task<OperationResult<Scenario>> LoadScenarioAsync(string filePath)
         {
-            Debug.WriteLine($"Loading scenario from: {filePath}");
             try
             {
-                // Services層を使ってファイル処理
-                var content = await _fileIOService.ReadFileAsync(filePath);
-                var parseResult = await _scenarioService.ParseScenarioAsync(content);
-
-                if (parseResult.IsSuccess && parseResult.ParsedScenario != null)
+                // DataGatewayを使用してファイル読み込み
+                var result = await _dataGateway.LoadFromFileAsync(filePath);
+                Debug.WriteLine($"LoadScenarioAsync: {filePath} - Success: {result.IsSuccess}");
+                if (result.IsSuccess && result.Data != null)
                 {
-                    // ファイル情報を設定
-                    parseResult.ParsedScenario.SetFilePath(filePath);
-                    parseResult.ParsedScenario.MarkAsSaved();
                     // Repositoryに設定
-                    _repository.SetScenario(parseResult.ParsedScenario);
+                    _repository.SetScenario(result.Data);
+
+                    // イベント発火
+                    OnScenarioChanged();
+                    OnSaveStateChanged();
                 }
 
-                return new ScenarioLoadResult
-                {
-                    IsSuccess = parseResult.IsSuccess,
-                    LoadedScenario = parseResult.ParsedScenario,
-                    ErrorMessage = parseResult.ErrorMessage,
-                    HasUnprocessedLines = parseResult.HasUnprocessedLines,
-                    UnprocessedLines = parseResult.UnprocessedLines
-                };
+                return result;
             }
             catch (Exception ex)
             {
-                var errorInfo = Services.FileIO.ErrorHandler.CreateFromException(ex, "ファイル読み込み");
-                return new ScenarioLoadResult
-                {
-                    IsSuccess = false,
-                    ErrorMessage = errorInfo.UserMessage
-                };
+                return OperationResult<Scenario>.Failure($"シナリオ読み込み中にエラーが発生しました: {ex.Message}");
             }
         }
 
@@ -98,54 +95,38 @@ namespace TRPGGMTool.Models.Managers
         /// </summary>
         /// <param name="filePath">保存先パス（省略時は現在のパス）</param>
         /// <returns>保存結果</returns>
-        public async Task<ScenarioSaveResult> SaveScenarioAsync(string? filePath = null)
+        public async Task<OperationResult<string>> SaveScenarioAsync(string? filePath = null)
         {
             try
             {
                 if (!IsScenarioLoaded)
                 {
-                    return new ScenarioSaveResult
-                    {
-                        IsSuccess = false,
-                        ErrorMessage = "保存するシナリオがありません"
-                    };
+                    return OperationResult<string>.Failure("保存するシナリオがありません");
                 }
 
                 var targetPath = filePath ?? CurrentScenario!.FilePath;
                 if (string.IsNullOrEmpty(targetPath))
                 {
-                    return new ScenarioSaveResult
-                    {
-                        IsSuccess = false,
-                        ErrorMessage = "保存先パスが指定されていません"
-                    };
+                    return OperationResult<string>.Failure("保存先パスが指定されていません");
                 }
 
-                // Services層を使ってファイル処理
-                var content = await _scenarioService.SerializeScenarioAsync(CurrentScenario!);
-                var success = await _fileIOService.WriteFileAsync(targetPath, content);
+                // DataGatewayを使用してファイル保存
+                var result = await _dataGateway.SaveToFileAsync(CurrentScenario!, targetPath);
 
-                if (success)
+                if (result.IsSuccess)
                 {
-                    CurrentScenario!.SetFilePath(targetPath);
+                    // 保存状態を更新（DataGateway内で既に更新されているが、念のため）
                     CurrentScenario!.MarkAsSaved();
+
+                    // イベント発火
+                    OnSaveStateChanged();
                 }
 
-                return new ScenarioSaveResult
-                {
-                    IsSuccess = success,
-                    SavedFilePath = success ? targetPath : null,
-                    ErrorMessage = success ? null : "ファイルの保存に失敗しました"
-                };
+                return result;
             }
             catch (Exception ex)
             {
-                var errorInfo = Services.FileIO.ErrorHandler.CreateFromException(ex, "ファイル保存");
-                return new ScenarioSaveResult
-                {
-                    IsSuccess = false,
-                    ErrorMessage = errorInfo.UserMessage
-                };
+                return OperationResult<string>.Failure($"シナリオ保存中にエラーが発生しました: {ex.Message}");
             }
         }
 
@@ -155,8 +136,14 @@ namespace TRPGGMTool.Models.Managers
         /// <param name="title">シナリオタイトル</param>
         public void CreateNewScenario(string title = "新しいシナリオ")
         {
-            var newScenario = _scenarioService.CreateNewScenario(title);
+            var newScenario = new Scenario();
+            newScenario.Metadata.SetTitle(title);
+
             _repository.SetScenario(newScenario);
+
+            // イベント発火
+            OnScenarioChanged();
+            OnSaveStateChanged();
         }
 
         /// <summary>
@@ -165,43 +152,53 @@ namespace TRPGGMTool.Models.Managers
         public void ClearScenario()
         {
             _repository.ClearScenario();
+
+            // イベント発火
+            OnScenarioChanged();
+            OnSaveStateChanged();
         }
 
         /// <summary>
         /// 現在のシナリオを検証
         /// </summary>
         /// <returns>検証結果</returns>
-        public async Task<Models.Validation.ValidationResult> ValidateCurrentScenarioAsync()
+        public async Task<ValidationResult> ValidateCurrentScenarioAsync()
         {
             if (!IsScenarioLoaded)
             {
-                return Models.Validation.ValidationResult.Error("検証するシナリオがありません");
+                return ValidationResult.Error("検証するシナリオがありません");
             }
 
-            return await _scenarioService.ValidateAsync(CurrentScenario!);
+            return await ScenarioValidator.ValidateAsync(CurrentScenario!);
         }
 
-    }
+        /// <summary>
+        /// シナリオ変更イベントを発火
+        /// </summary>
+        protected virtual void OnScenarioChanged()
+        {
+            ScenarioChanged?.Invoke(this, EventArgs.Empty);
+        }
 
-    /// <summary>
-    /// シナリオ読み込み結果
-    /// </summary>
-    public class ScenarioLoadResult
-    {
-        public bool IsSuccess { get; set; }
-        public Scenario? LoadedScenario { get; set; }
-        public string? ErrorMessage { get; set; }
-        public bool HasUnprocessedLines { get; set; }
-        public List<string> UnprocessedLines { get; set; } = new();
-    }
+        /// <summary>
+        /// 保存状態変更イベントを発火
+        /// </summary>
+        protected virtual void OnSaveStateChanged()
+        {
+            SaveStateChanged?.Invoke(this, EventArgs.Empty);
+        }
 
-    /// <summary>
-    /// シナリオ保存結果
-    /// </summary>
-    public class ScenarioSaveResult
-    {
-        public bool IsSuccess { get; set; }
-        public string? SavedFilePath { get; set; }
-        public string? ErrorMessage { get; set; }
+        /// <summary>
+        /// 現在のシナリオを変更済みとしてマーク
+        /// ViewModelから呼び出される（編集操作後）
+        /// </summary>
+        public void MarkCurrentScenarioAsModified()
+        {
+            if (IsScenarioLoaded)
+            {
+                CurrentScenario!.MarkAsModified();
+                OnSaveStateChanged();
+            }
+        }
     }
 }
