@@ -9,11 +9,11 @@ namespace TRPGGMTool.Services.Parsers
     /// <summary>
     /// 書式変更対応メタデータパーサー
     /// </summary>
-    public class FlexibleMetadataParser : FlexibleParserBase, IScenarioSectionParser
+    public class MetadataParser : ParserBase, IScenarioSectionParser
     {
-        public string SectionName => "FlexibleMetadataParser";
+        public string SectionName => "MetadataParser";
 
-        public FlexibleMetadataParser(FormatConfiguration formatConfig) : base(formatConfig)
+        public MetadataParser(FormatConfiguration formatConfig) : base(formatConfig)
         {
         }
 

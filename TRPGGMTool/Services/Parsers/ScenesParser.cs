@@ -13,11 +13,11 @@ namespace TRPGGMTool.Services.Parsers
     /// <summary>
     /// 書式変更対応シーンパーサー
     /// </summary>
-    public class FlexibleScenesParser : FlexibleParserBase, IScenarioSectionParser
+    public class ScenesParser : ParserBase, IScenarioSectionParser
     {
-        public string SectionName => "FlexibleScenesParser";
+        public string SectionName => "ScenesParser";
 
-        public FlexibleScenesParser(FormatConfiguration formatConfig) : base(formatConfig)
+        public ScenesParser(FormatConfiguration formatConfig) : base(formatConfig)
         {
         }
 

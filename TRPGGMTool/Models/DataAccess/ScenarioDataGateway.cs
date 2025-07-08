@@ -5,6 +5,7 @@ using TRPGGMTool.Models.Parsing;
 using TRPGGMTool.Models.Validation;
 using TRPGGMTool.Services;
 using TRPGGMTool.Services.FileIO;
+using System.Diagnostics;
 
 namespace TRPGGMTool.Models.DataAccess
 {
@@ -52,7 +53,7 @@ namespace TRPGGMTool.Models.DataAccess
                 var content = await _fileIOService.ReadFileAsync(filePath);
 
                 // 2. パース実行（テキストのみ渡す）
-                var parseResults = _parser.ParseFromText(content);  // 修正：テキストのみ渡す
+                var parseResults = _parser.ParseFromText(content);  
 
                 // 3. 結果を分析してScenarioオブジェクト構築
                 var scenario = await BuildScenarioFromParseResults(parseResults);

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using TRPGGMTool.Models.Configuration;
 
@@ -8,11 +9,11 @@ namespace TRPGGMTool.Services.Parsers
     /// 書式変更対応パーサーの基底クラス
     /// 共通的なパターンマッチング機能を提供
     /// </summary>
-    public abstract class FlexibleParserBase
+    public abstract class ParserBase
     {
         protected readonly FormatConfiguration _formatConfig;
 
-        protected FlexibleParserBase(FormatConfiguration formatConfig)
+        protected ParserBase(FormatConfiguration formatConfig)
         {
             _formatConfig = formatConfig;
         }
@@ -88,24 +89,22 @@ namespace TRPGGMTool.Services.Parsers
             return false;
         }
 
-        /// <summary>
-        /// 番号付きリストの解析
-        /// </summary>
-        /// <param name="line">解析対象行</param>
-        /// <param name="number">番号</param>
-        /// <param name="content">内容</param>
-        /// <returns>解析成功の場合true</returns>
         protected bool TryParseNumberedList(string line, out int number, out string? content)
         {
             number = 0;
             content = null;
 
             if (string.IsNullOrWhiteSpace(line))
+            {
+                Debug.WriteLine($"    TryParseNumberedList: 空行");
                 return false;
+            }
 
             try
             {
                 var regex = new Regex(_formatConfig.Items.NumberedList);
+                Debug.WriteLine($"    TryParseNumberedList: パターン='{_formatConfig.Items.NumberedList}', 対象='{line}'");
+
                 var match = regex.Match(line);
 
                 if (match.Success && match.Groups.Count >= 3)
@@ -113,13 +112,16 @@ namespace TRPGGMTool.Services.Parsers
                     if (int.TryParse(match.Groups[1].Value, out number))
                     {
                         content = match.Groups[2].Value.Trim();
+                        Debug.WriteLine($"    TryParseNumberedList: 成功 - {number}. {content}");
                         return true;
                     }
                 }
+
+                Debug.WriteLine($"    TryParseNumberedList: 失敗");
             }
-            catch (System.ArgumentException)
+            catch (System.ArgumentException ex)
             {
-                // 正規表現エラーの場合はfalseを返す
+                Debug.WriteLine($"    TryParseNumberedList: 正規表現エラー - {ex.Message}");
             }
 
             return false;
@@ -196,7 +198,7 @@ namespace TRPGGMTool.Services.Parsers
         }
 
         /// <summary>
-        /// セクション終了チェック（## で始まる行）
+        /// セクション終了チェック（正確に ## で始まる行）
         /// </summary>
         /// <param name="line">チェック対象行</param>
         /// <returns>セクション終了の場合true</returns>
@@ -205,7 +207,10 @@ namespace TRPGGMTool.Services.Parsers
             if (string.IsNullOrWhiteSpace(line))
                 return false;
 
-            return line.Trim().StartsWith("##");
+            var trimmed = line.Trim();
+
+            // 正規表現で厳密にチェック: ## の後にスペースまたは文字が続く
+            return System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^##\s+.+$");
         }
     }
 }

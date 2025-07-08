@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
@@ -39,9 +40,9 @@ namespace TRPGGMTool.Models.Parsing
         /// </summary>
         private void InitializeParsers()
         {
-            _sectionParsers.Add(new FlexibleMetadataParser(_formatConfig));
-            _sectionParsers.Add(new FlexibleGameSettingsParser(_formatConfig));
-            _sectionParsers.Add(new FlexibleScenesParser(_formatConfig));
+            _sectionParsers.Add(new MetadataParser(_formatConfig));
+            _sectionParsers.Add(new GameSettingsParser(_formatConfig));
+            _sectionParsers.Add(new ScenesParser(_formatConfig));
         }
 
         /// <summary>
@@ -113,9 +114,6 @@ namespace TRPGGMTool.Models.Parsing
             return ("", lines.Length);
         }
 
-        /// <summary>
-        /// 全セクションを解析
-        /// </summary>
         private (ScenarioMetadata metadata, GameSettings gameSettings, List<Scene> scenes, List<string> errors, List<string> warnings) ParseAllSections(string[] lines)
         {
             ScenarioMetadata metadata = null;
@@ -130,6 +128,10 @@ namespace TRPGGMTool.Models.Parsing
             var titleResult = ParseTitle(lines);
             currentIndex = titleResult.nextIndex;
 
+            Debug.WriteLine("=== ScenarioParser実行状況 ===");
+            Debug.WriteLine($"総行数: {lines.Length}");
+            Debug.WriteLine($"タイトル解析後の開始位置: {currentIndex}");
+
             // 各セクション解析
             while (currentIndex < lines.Length)
             {
@@ -141,23 +143,28 @@ namespace TRPGGMTool.Models.Parsing
                     continue;
                 }
 
+                Debug.WriteLine($"[{currentIndex}] 処理中の行: '{line}'");
+
                 // 適切なパーサーを探して実行
                 bool handled = false;
                 foreach (var parser in _sectionParsers)
                 {
                     if (parser.CanHandle(line))
                     {
+                        Debug.WriteLine($"  → {parser.SectionName} が処理開始");
                         try
                         {
                             var result = parser.ParseSection(lines, currentIndex + 1);
 
                             if (result.isSuccess)
                             {
+                                Debug.WriteLine($"  → {parser.SectionName} 処理成功");
                                 // パーサーの種類に応じて結果を振り分け
                                 AssignParseResult(parser, result.Data, ref metadata, ref gameSettings, scenes);
                             }
                             else
                             {
+                                Debug.WriteLine($"  → {parser.SectionName} 処理失敗: {result.ErrorMessage}");
                                 errors.Add($"{parser.SectionName}: {result.ErrorMessage}");
                             }
 
@@ -167,6 +174,7 @@ namespace TRPGGMTool.Models.Parsing
                         }
                         catch (Exception ex)
                         {
+                            Debug.WriteLine($"  → {parser.SectionName} 例外発生: {ex.Message}");
                             errors.Add($"{parser.SectionName}でエラー: {ex.Message}");
                             currentIndex++; // エラーの場合は1行だけ進める
                             handled = true;
@@ -177,10 +185,14 @@ namespace TRPGGMTool.Models.Parsing
 
                 if (!handled)
                 {
+                    Debug.WriteLine($"  → 未処理: {line}");
                     warnings.Add($"未処理の行: {line}");
                     currentIndex++;
                 }
             }
+
+            Debug.WriteLine($"パース結果: Metadata={metadata != null}, GameSettings={gameSettings != null}, Scenes={scenes.Count}");
+            Debug.WriteLine("".PadRight(50, '='));
 
             return (metadata, gameSettings, scenes, errors, warnings);
         }
@@ -193,17 +205,17 @@ namespace TRPGGMTool.Models.Parsing
         {
             switch (parser.SectionName)
             {
-                case "FlexibleMetadataParser":
+                case "MetadataParser":
                     if (data is ScenarioMetadata parsedMetadata)
                         metadata = parsedMetadata;
                     break;
 
-                case "FlexibleGameSettingsParser":
+                case "GameSettingsParser":
                     if (data is GameSettings parsedGameSettings)
                         gameSettings = parsedGameSettings;
                     break;
 
-                case "FlexibleScenesParser":
+                case "ScenesParser":
                     if (data is List<Scene> parsedScenes)
                         scenes.AddRange(parsedScenes);
                     break;
