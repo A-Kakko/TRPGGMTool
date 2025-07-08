@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.Scenario;
+using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Settings;
 
 namespace TRPGGMTool.Services.Parsers

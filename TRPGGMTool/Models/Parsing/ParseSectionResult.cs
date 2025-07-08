@@ -1,4 +1,4 @@
-﻿using TRPGGMTool.Models.Scenario;
+﻿using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.Settings;
 
@@ -13,7 +13,7 @@ namespace TRPGGMTool.Models.Parsing
         /// <summary>
         /// パース結果データ（ScenarioMetadata, GameSettings, List<Scene>など）
         /// </summary>
-        public object Data { get; set; }
+        public object? Data { get; set; }
 
         /// <summary>
         /// 次に処理すべき行のインデックス
@@ -23,7 +23,7 @@ namespace TRPGGMTool.Models.Parsing
         /// <summary>
         /// パースが成功したかどうか
         /// </summary>
-        public bool Success { get; set; } = true;
+        public bool isSuccess { get; set; } = true;
 
         /// <summary>
         /// エラーメッセージ（失敗時）
@@ -39,7 +39,7 @@ namespace TRPGGMTool.Models.Parsing
             {
                 Data = data,
                 NextIndex = nextIndex,
-                Success = true
+                isSuccess = true
             };
         }
 
@@ -52,7 +52,7 @@ namespace TRPGGMTool.Models.Parsing
             {
                 Data = null,
                 NextIndex = nextIndex,
-                Success = false,
+                isSuccess = false,
                 ErrorMessage = errorMessage
             };
         }
@@ -71,12 +71,12 @@ namespace TRPGGMTool.Models.Parsing
         /// <summary>
         /// メタ情報
         /// </summary>
-        public ScenarioMetadata Metadata { get; set; }
+        public ScenarioMetadata? Metadata { get; set; }
 
         /// <summary>
         /// ゲーム設定
         /// </summary>
-        public GameSettings GameSettings { get; set; }
+        public GameSettings? GameSettings { get; set; }
 
         /// <summary>
         /// シーン一覧

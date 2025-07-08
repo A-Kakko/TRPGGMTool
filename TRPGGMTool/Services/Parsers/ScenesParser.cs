@@ -5,7 +5,7 @@ using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.Items;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.Scenario;
+using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Scenes;
 
 namespace TRPGGMTool.Services.Parsers
@@ -30,7 +30,7 @@ namespace TRPGGMTool.Services.Parsers
         }
 
         /// <summary>
-        /// 新しい戻り値方式でのパース処理
+        /// 戻り値方式でのパース処理
         /// </summary>
         public ParseSectionResult ParseSection(string[] lines, int startIndex)
         {
@@ -58,7 +58,7 @@ namespace TRPGGMTool.Services.Parsers
                     if (line.StartsWith("###"))
                     {
                         var sceneResult = ParseSingleScene(lines, i);
-                        if (sceneResult.Success && sceneResult.Data is Scene scene)
+                        if (sceneResult.isSuccess && sceneResult.Data is Scene scene)
                         {
                             scenes.Add(scene);
                         }

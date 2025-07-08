@@ -2,7 +2,7 @@
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.Scenario;
+using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.Services.Parsers
 {

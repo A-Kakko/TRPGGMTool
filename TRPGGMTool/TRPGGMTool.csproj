@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <Folder Include="Commands\" />
+    <Folder Include="Services\Scenario\" />
     <Folder Include="ViewModels\" />
     <Folder Include="Views\" />
   </ItemGroup>

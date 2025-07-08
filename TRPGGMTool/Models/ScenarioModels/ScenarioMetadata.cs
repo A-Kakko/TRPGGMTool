@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TRPGGMTool.Models.Scenario
+namespace TRPGGMTool.Models.ScenarioModels
 {
     /// <summary>
     /// シナリオのメタ情報を管理するクラス

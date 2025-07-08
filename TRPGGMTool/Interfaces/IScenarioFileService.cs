@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using TRPGGMTool.Models.Scenario;
+using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.Interfaces
 {

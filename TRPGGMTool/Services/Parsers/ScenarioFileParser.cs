@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.Scenario;
+using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.Settings;
 using TRPGGMTool.Services.Parsers;
@@ -164,7 +164,7 @@ namespace TRPGGMTool.Services
                         {
                             var result = parser.ParseSection(lines, currentIndex + 1);
 
-                            if (result.Success)
+                            if (result.isSuccess)
                             {
                                 // パーサーの種類に応じて結果を振り分け
                                 AssignParseResult(parser, result.Data, ref metadata, ref gameSettings, scenes);
