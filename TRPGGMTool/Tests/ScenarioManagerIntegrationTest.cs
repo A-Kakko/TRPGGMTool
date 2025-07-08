@@ -279,6 +279,7 @@ namespace TRPGGMTool.Tests
             var judgmentCount = scenario.GameSettings.JudgmentLevelSettings.LevelCount;
 
             debug.AppendLine($"  プレイヤー数: {playerCount}");
+            debug.AppendLine($"  プレイヤー名: {string.Join(", ", playerNames)}");
             debug.AppendLine($"  判定レベル数: {judgmentCount}");
 
             if (judgmentCount != 4)
