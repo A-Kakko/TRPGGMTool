@@ -1,0 +1,280 @@
+﻿<Window x:Class="TRPGGMTool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:TRPGGMTool.Converters"
+        Title="{Binding WindowTitle}" Height="700" Width="1200"
+        WindowStartupLocation="CenterScreen">
+
+    <!-- リソース定義 -->
+    <Window.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+
+        <!-- スタイル定義 -->
+        <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+
+        <Style x:Key="SectionGroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <DockPanel>
+            <!-- メニューバー -->
+            <Menu DockPanel.Dock="Top">
+                <MenuItem Header="ファイル(_F)">
+                    <MenuItem Header="新規作成(_N)" Command="{Binding NewScenarioCommand}" InputGestureText="Ctrl+N" />
+                    <MenuItem Header="開く(_O)" Command="{Binding LoadScenarioCommand}" InputGestureText="Ctrl+O" />
+                    <MenuItem Header="保存(_S)" Command="{Binding SaveScenarioCommand}" InputGestureText="Ctrl+S" />
+                    <MenuItem Header="名前を付けて保存(_A)" Command="{Binding SaveAsScenarioCommand}" InputGestureText="Ctrl+Shift+S" />
+                    <Separator />
+                    <MenuItem Header="終了(_X)" InputGestureText="Alt+F4" />
+                </MenuItem>
+                <MenuItem Header="編集(_E)">
+                    <MenuItem Header="シーン追加(_A)" />
+                    <MenuItem Header="項目追加(_I)" />
+                </MenuItem>
+                <MenuItem Header="設定(_S)">
+                    <MenuItem Header="プレイヤー設定(_P)" />
+                    <MenuItem Header="判定レベル設定(_J)" />
+                </MenuItem>
+                <MenuItem Header="ヘルプ(_H)">
+                    <MenuItem Header="開発(_D)">
+                        <MenuItem Header="テストウィンドウ(_T)" Click="TestMenuItem_Click" />
+                    </MenuItem>
+                </MenuItem>
+            </Menu>
+
+            <!-- メインコンテンツ -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- シナリオ基本情報 -->
+                <GroupBox Grid.Row="0" Header="シナリオ情報" Style="{StaticResource SectionGroupBoxStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" Content="タイトル:" />
+                        <TextBox Grid.Row="0" Grid.Column="1" 
+                                Text="{Binding ScenarioTitle, UpdateSourceTrigger=PropertyChanged}" 
+                                Margin="5" />
+
+                        <Label Grid.Row="1" Grid.Column="0" Content="作成者:" />
+                        <TextBox Grid.Row="1" Grid.Column="1" 
+                                Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}" 
+                                Margin="5" />
+
+                        <Label Grid.Row="2" Grid.Column="0" Content="説明:" />
+                        <TextBox Grid.Row="2" Grid.Column="1" 
+                                Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
+                                Margin="5" TextWrapping="Wrap" Height="60" />
+                    </Grid>
+                </GroupBox>
+
+                <!-- ゲーム設定 -->
+                <GroupBox Grid.Row="1" Header="ゲーム設定" Style="{StaticResource SectionGroupBoxStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- プレイヤー設定 -->
+                        <GroupBox Grid.Column="0" Header="プレイヤー" Margin="5">
+                            <StackPanel>
+                                <TextBlock Text="{Binding PlayerCount, StringFormat='プレイヤー数: {0}人'}" Margin="5"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- 判定レベル設定 -->
+                        <GroupBox Grid.Column="1" Header="判定レベル" Margin="5">
+                            <StackPanel>
+                                <TextBlock Text="{Binding JudgmentLevelCount, StringFormat='判定レベル数: {0}'}" Margin="5"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </Grid>
+                </GroupBox>
+
+                <!-- シーン操作エリア -->
+                <GroupBox Grid.Row="2" Header="シーン" Style="{StaticResource SectionGroupBoxStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- シーン選択・ナビゲーション -->
+                        <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+                            <Grid DataContext="{Binding SceneNavigation}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- シーン選択 -->
+                                <ComboBox Grid.Column="0" 
+                                         ItemsSource="{Binding Scenes}"
+                                         SelectedItem="{Binding SelectedScene}"
+                                         DisplayMemberPath="Name"
+                                         Margin="0,0,10,0"
+                                         MinHeight="25"/>
+
+                                <!-- ナビゲーションボタン -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="前のシーン" 
+                                           Command="{Binding NavigatePreviousCommand}"
+                                           Margin="0,0,5,0" Padding="10,5"/>
+                                    <Button Content="次のシーン" 
+                                           Command="{Binding NavigateNextCommand}"
+                                           Margin="0,0,5,0" Padding="10,5"/>
+                                    <Button Content="削除" 
+                                           Command="{Binding DeleteSceneCommand}"
+                                           Padding="10,5"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- シーンコンテンツ表示エリア -->
+                        <Grid Grid.Row="1" DataContext="{Binding SceneContent}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- 左側: 判定ボタン領域 -->
+                            <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,10,0">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel DataContext="{Binding JudgmentControl}" Margin="5">
+                                        <TextBlock Text="判定レベル" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center"/>
+
+                                        <ItemsControl ItemsSource="{Binding JudgmentLevels}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="{Binding Name}"
+                                                           Command="{Binding DataContext.SelectJudgmentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                           CommandParameter="{Binding Index}"
+                                                           IsEnabled="{Binding IsEnabled}"
+                                                           Margin="0,2"
+                                                           Padding="5">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                        <Setter Property="Background" Value="LightBlue"/>
+                                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+
+                            <!-- 右側: コンテンツ表示領域 -->
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- 項目選択ボタン -->
+                                <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,5">
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                        <StackPanel Orientation="Horizontal" DataContext="{Binding ItemSelector}">
+                                            <TextBlock Text="{Binding ItemTypeName}" 
+                                                      VerticalAlignment="Center" 
+                                                      Margin="0,0,10,0"
+                                                      FontWeight="Bold"/>
+
+                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Content="{Binding DisplayName}"
+                                                               Command="{Binding DataContext.SelectItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                               CommandParameter="{Binding Item}"
+                                                               Margin="0,0,5,0"
+                                                               Padding="10,5">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                            <Setter Property="Background" Value="LightGreen"/>
+                                                                            <Setter Property="FontWeight" Value="Bold"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <!-- 項目名表示 -->
+                                <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,5">
+                                    <StackPanel Orientation="Horizontal" DataContext="{Binding ContentDisplay}">
+                                        <TextBlock Text="{Binding ItemTypeLabel}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="{Binding ItemName}" 
+                                                  VerticalAlignment="Center" 
+                                                  FontWeight="Bold"
+                                                  FontSize="14"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- コンテンツ表示 -->
+                                <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,5">
+                                    <ScrollViewer DataContext="{Binding ContentDisplay}">
+                                        <TextBlock Text="{Binding DisplayText}"
+                                                  TextWrapping="Wrap"
+                                                  Padding="15"
+                                                  FontSize="12"
+                                                  LineHeight="20"
+                                                  Background="White"/>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <!-- コピーボタン -->
+                                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="📋 コピー" 
+                                           Command="{Binding ContentDisplay.CopyTextCommand}"
+                                           Padding="15,5"
+                                           Margin="5"/>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+        </DockPanel>
+    </Grid>
+</Window>

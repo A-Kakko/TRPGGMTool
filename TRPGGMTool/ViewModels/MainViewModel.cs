@@ -5,6 +5,7 @@ using System.Windows.Input;
 using TRPGGMTool.Commands;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Interfaces.IServices;
+using TRPGGMTool.Interfaces.Model;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Scenes;
@@ -13,42 +14,71 @@ namespace TRPGGMTool.ViewModels
 {
     /// <summary>
     /// メインウィンドウのViewModel
+    /// 統合されたViewModel群を管理し、アプリケーション全体の状態を制御
     /// </summary>
-    public class MainViewModel : INotifyPropertyChanged
+    public class MainViewModel : ViewModelBase
     {
         private readonly IScenarioFileService _fileService;
         private readonly IScenarioBusinessService _businessService;
+        private readonly IDialogService _dialogService;
         private Scenario? _currentScenario;
-        private Scene? _selectedScene;
+        private ViewMode _currentViewMode = ViewMode.Edit;
+        private readonly List<IViewModeAware> _viewModeAwareComponents = new();
 
         /// <summary>
         /// コンストラクタ（依存性注入）
         /// </summary>
         public MainViewModel(
             IScenarioFileService fileService,
-            IScenarioBusinessService businessService)
+            IScenarioBusinessService businessService,
+            IDialogService dialogService)
         {
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
             _businessService = businessService ?? throw new ArgumentNullException(nameof(businessService));
 
-            Scenes = new ObservableCollection<Scene>();
             InitializeCommands();
 
             // 初期化時に新しいシナリオを作成
             InitializeWithNewScenario();
+            _dialogService = dialogService;
+        }
+
+        #region 基本プロパティ（既存機能）
+
+        /// <summary>
+        /// 現在の表示モード
+        /// </summary>
+        public ViewMode CurrentViewMode
+        {
+            get => _currentViewMode;
+            set
+            {
+                if (SetProperty(ref _currentViewMode, value))
+                {
+                    // 子ViewModelにモード変更を通知
+                    NotifyViewModeChanged();
+                    OnPropertyChanged(nameof(IsEditMode));
+                    OnPropertyChanged(nameof(IsViewMode));
+                }
+            }
         }
 
         /// <summary>
-        /// 初期化時に新しいシナリオを作成
+        /// 編集モードかどうか
         /// </summary>
-        private void InitializeWithNewScenario()
-        {
-            var initialScenario = _businessService.CreateNewScenario("新しいシナリオ");
-            CurrentScenario = initialScenario;
-            System.Diagnostics.Debug.WriteLine("初期化: 新しいシナリオを自動作成しました");
-        }
+        public bool IsEditMode => CurrentViewMode == ViewMode.Edit;
 
-        #region プロパティ
+        /// <summary>
+        /// 閲覧モードかどうか
+        /// </summary>
+        public bool IsViewMode => CurrentViewMode == ViewMode.View;
+
+        /// <summary>
+        /// モード切り替えコマンド
+        /// </summary>
+        public ICommand? ToggleViewModeCommand { get; private set; }
+
+
         /// <summary>
         /// 現在のシナリオ（nullになることはない）
         /// </summary>
@@ -60,16 +90,7 @@ namespace TRPGGMTool.ViewModels
                 if (_currentScenario != value)
                 {
                     _currentScenario = value;
-                    UpdateScenesCollection();
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(IsScenarioLoaded));
-                    OnPropertyChanged(nameof(ScenarioTitle));
-                    OnPropertyChanged(nameof(HasUnsavedChanges));
-                    OnPropertyChanged(nameof(Author));
-                    OnPropertyChanged(nameof(Description));
-                    OnPropertyChanged(nameof(PlayerCount));
-                    OnPropertyChanged(nameof(JudgmentLevelCount));
-                    OnPropertyChanged(nameof(WindowTitle)); // 追加
+                    OnScenarioChanged();
                 }
             }
         }
@@ -77,7 +98,7 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// シナリオが読み込まれているかどうか（常にtrue）
         /// </summary>
-        public bool IsScenarioLoaded => true; // 常にシナリオが存在
+        public bool IsScenarioLoaded => true;
 
         /// <summary>
         /// シナリオタイトル
@@ -93,7 +114,7 @@ namespace TRPGGMTool.ViewModels
                     CurrentScenario.MarkAsModified();
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(HasUnsavedChanges));
-                    OnPropertyChanged(nameof(WindowTitle)); // 追加
+                    OnPropertyChanged(nameof(WindowTitle));
                     System.Diagnostics.Debug.WriteLine($"タイトル変更: {value}");
                 }
             }
@@ -113,7 +134,7 @@ namespace TRPGGMTool.ViewModels
                     CurrentScenario.MarkAsModified();
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(HasUnsavedChanges));
-                    OnPropertyChanged(nameof(WindowTitle)); // 追加
+                    OnPropertyChanged(nameof(WindowTitle));
                     System.Diagnostics.Debug.WriteLine($"作成者変更: {value}");
                 }
             }
@@ -133,12 +154,11 @@ namespace TRPGGMTool.ViewModels
                     CurrentScenario.MarkAsModified();
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(HasUnsavedChanges));
-                    OnPropertyChanged(nameof(WindowTitle)); // 追加
+                    OnPropertyChanged(nameof(WindowTitle));
                     System.Diagnostics.Debug.WriteLine($"説明変更: {value}");
                 }
             }
         }
-
 
         /// <summary>
         /// ウィンドウのタイトルバーに表示するタイトル
@@ -155,7 +175,6 @@ namespace TRPGGMTool.ViewModels
             }
         }
 
-
         /// <summary>
         /// 未保存の変更があるかどうか
         /// </summary>
@@ -171,33 +190,19 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         public int JudgmentLevelCount => CurrentScenario.GameSettings.GetJudgmentLevelCount();
 
+        #endregion
+
+        #region 新しいViewModel群
 
         /// <summary>
-        /// シーン一覧
+        /// シーンナビゲーションViewModel
         /// </summary>
-        public ObservableCollection<Scene> Scenes { get; }
+        public SceneNavigationViewModel? SceneNavigation { get; private set; }
 
         /// <summary>
-        /// 選択されたシーン
+        /// シーンコンテンツViewModel
         /// </summary>
-        public Scene? SelectedScene
-        {
-            get => _selectedScene;
-            set
-            {
-                if (_selectedScene != value)
-                {
-                    _selectedScene = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(IsSceneSelected));
-                }
-            }
-        }
-
-        /// <summary>
-        /// シーンが選択されているかどうか
-        /// </summary>
-        public bool IsSceneSelected => SelectedScene != null;
+        public SceneContentViewModel? SceneContent { get; private set; }
 
         #endregion
 
@@ -211,14 +216,154 @@ namespace TRPGGMTool.ViewModels
         private void InitializeCommands()
         {
             NewScenarioCommand = new RelayCommand(CreateNewScenario);
-            LoadScenarioCommand = new RelayCommand<string>(async (filePath) => await LoadScenarioAsync(filePath));
+            LoadScenarioCommand = new RelayCommand(async () => await LoadScenarioAsync());
             SaveScenarioCommand = new RelayCommand(async () => await SaveScenarioAsync(), () => IsScenarioLoaded);
-            SaveAsScenarioCommand = new RelayCommand<string>(async (filePath) => await SaveAsScenarioAsync(filePath), () => IsScenarioLoaded);
+            SaveAsScenarioCommand = new RelayCommand(async () => await SaveAsScenarioAsync());
+        }
+        #endregion
+
+        #region モード変更
+
+        /// <summary>
+        /// 子ViewModelにモード変更を通知
+        /// </summary>
+        private void NotifyViewModeChanged()
+        {
+            foreach (var component in _viewModeAwareComponents)
+            {
+                component.SetViewMode(CurrentViewMode);
+            }
+        }
+
+
+        #region 初期化・シナリオ管理
+
+        /// <summary>
+        /// 初期化時に新しいシナリオを作成
+        /// </summary>
+        private void InitializeWithNewScenario()
+        {
+            var initialScenario = _businessService.CreateNewScenario("新しいシナリオ");
+            CurrentScenario = initialScenario;
+            System.Diagnostics.Debug.WriteLine("初期化: 新しいシナリオを自動作成しました");
+        }
+
+
+
+        /// <summary>
+        /// シナリオ変更時の処理
+        /// </summary>
+        private void OnScenarioChanged()
+        {
+            // 既存のプロパティ変更通知
+            OnPropertyChanged(nameof(CurrentScenario));
+            OnPropertyChanged(nameof(IsScenarioLoaded));
+            OnPropertyChanged(nameof(ScenarioTitle));
+            OnPropertyChanged(nameof(HasUnsavedChanges));
+            OnPropertyChanged(nameof(Author));
+            OnPropertyChanged(nameof(Description));
+            OnPropertyChanged(nameof(PlayerCount));
+            OnPropertyChanged(nameof(JudgmentLevelCount));
+            OnPropertyChanged(nameof(WindowTitle));
+
+            // 新しいViewModel群を初期化
+            InitializeSceneViewModels();
+        }
+
+
+        /// <summary>
+        /// シーン関連ViewModelを初期化
+        /// </summary>
+        private void InitializeSceneViewModels()
+        {
+            CleanupSceneViewModels();
+
+            SceneNavigation = new SceneNavigationViewModel(CurrentScenario);
+            SceneContent = new SceneContentViewModel(CurrentScenario);
+
+            // ViewModeAwareコンポーネントとして登録
+            _viewModeAwareComponents.Clear();
+            _viewModeAwareComponents.Add(SceneNavigation);
+            _viewModeAwareComponents.Add(SceneContent.JudgmentControl);
+            _viewModeAwareComponents.Add(SceneContent.ItemSelector); // 追加
+            _viewModeAwareComponents.Add(SceneContent.ContentDisplay);
+
+            // モードを設定
+            NotifyViewModeChanged();
+
+            SetupSceneEventHandlers();
+            OnPropertyChanged(nameof(SceneNavigation));
+            OnPropertyChanged(nameof(SceneContent));
+        }
+        #endregion
+
+
+
+        /// <summary>
+        /// シーンイベントハンドラーを設定
+        /// </summary>
+        private void SetupSceneEventHandlers()
+        {
+            if (SceneNavigation != null)
+            {
+                SceneNavigation.SceneChanged += OnSceneSelectionChanged;
+            }
+
+            if (SceneContent != null)
+            {
+                SceneContent.TextCopied += OnTextCopied;
+                SceneContent.CopyError += OnCopyError;
+            }
+        }
+
+        /// <summary>
+        /// シーン選択変更時の処理
+        /// </summary>
+        private void OnSceneSelectionChanged(object? sender, SceneChangedEventArgs e)
+        {
+            SceneContent?.SetCurrentScene(e.NewScene);
+            System.Diagnostics.Debug.WriteLine($"シーン選択変更: {e.NewScene?.Name ?? "なし"}");
+        }
+
+        /// <summary>
+        /// テキストコピー完了時の処理
+        /// </summary>
+        private void OnTextCopied(object? sender, TextCopiedEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine($"テキストコピー完了: {e.CopiedText.Substring(0, Math.Min(50, e.CopiedText.Length))}...");
+            // 必要に応じてステータスバーに表示など
+        }
+
+        /// <summary>
+        /// コピーエラー時の処理
+        /// </summary>
+        private void OnCopyError(object? sender, CopyErrorEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine($"コピーエラー: {e.ErrorMessage}");
+            // 必要に応じてエラーダイアログ表示など
+        }
+
+        /// <summary>
+        /// シーン関連ViewModelのクリーンアップ
+        /// </summary>
+        private void CleanupSceneViewModels()
+        {
+            if (SceneNavigation != null)
+            {
+                SceneNavigation.SceneChanged -= OnSceneSelectionChanged;
+            }
+
+            if (SceneContent != null)
+            {
+                SceneContent.TextCopied -= OnTextCopied;
+                SceneContent.CopyError -= OnCopyError;
+                SceneContent.Cleanup();
+            }
         }
 
         #endregion
 
-        #region メソッド
+        #region ファイル操作（既存機能）
 
         /// <summary>
         /// 新しいシナリオを作成
@@ -233,8 +378,12 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// シナリオを読み込み
         /// </summary>
-        private async Task LoadScenarioAsync(string filePath)
+        private async Task LoadScenarioAsync()
         {
+            var filePath = await _dialogService.ShowOpenFileDialogAsync(
+                "シナリオファイル (*.scenario)|*.scenario|Markdownファイル (*.md)|*.md|すべてのファイル (*.*)|*.*",
+                "シナリオファイルを開く");
+
             if (string.IsNullOrEmpty(filePath))
                 return;
 
@@ -244,20 +393,19 @@ namespace TRPGGMTool.ViewModels
 
             if (result.IsSuccess)
             {
-                CurrentScenario = result.Data!; // 成功時は必ずデータがある
+                CurrentScenario = result.Data!;
                 System.Diagnostics.Debug.WriteLine($"シナリオ読み込み成功: {result.Data!.Metadata.Title}");
 
                 if (result.Warnings.Count > 0)
                 {
-                    foreach (var warning in result.Warnings)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"警告: {warning}");
-                    }
+                    var warningMessage = $"ファイルは読み込まれましたが、{result.Warnings.Count}件の警告があります。";
+                    await _dialogService.ShowInfoDialogAsync(warningMessage, "読み込み完了");
                 }
             }
             else
             {
                 System.Diagnostics.Debug.WriteLine($"読み込みエラー: {result.ErrorMessage}");
+                await _dialogService.ShowErrorDialogAsync(result.ErrorMessage!, "読み込みエラー");
             }
         }
 
@@ -279,8 +427,15 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// シナリオを名前を付けて保存
         /// </summary>
-        private async Task SaveAsScenarioAsync(string filePath)
+        private async Task SaveAsScenarioAsync()
         {
+            var defaultFileName = CurrentScenario.Metadata.Title + ".scenario";
+
+            var filePath = await _dialogService.ShowSaveFileDialogAsync(
+                "シナリオファイル (*.scenario)|*.scenario|Markdownファイル (*.md)|*.md",
+                "シナリオファイルを保存",
+                defaultFileName);
+
             if (string.IsNullOrEmpty(filePath))
                 return;
 
@@ -300,36 +455,26 @@ namespace TRPGGMTool.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"シナリオ保存成功: {result.Data}");
                 OnPropertyChanged(nameof(HasUnsavedChanges));
+                OnPropertyChanged(nameof(WindowTitle));
+                await _dialogService.ShowInfoDialogAsync("シナリオを保存しました。", "保存完了");
             }
             else
             {
                 System.Diagnostics.Debug.WriteLine($"保存エラー: {result.ErrorMessage}");
+                await _dialogService.ShowErrorDialogAsync(result.ErrorMessage!, "保存エラー");
             }
         }
-
-        /// <summary>
-        /// シーンコレクションを更新
-        /// </summary>
-        private void UpdateScenesCollection()
-        {
-            Scenes.Clear();
-            foreach (var scene in CurrentScenario.Scenes)
-            {
-                Scenes.Add(scene);
-            }
-            SelectedScene = null;
-        }
-
 
         #endregion
 
-        #region INotifyPropertyChanged
+        #region IDisposable対応（将来の拡張用）
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        /// <summary>
+        /// リソースのクリーンアップ
+        /// </summary>
+        public void Cleanup()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            CleanupSceneViewModels();
         }
 
         #endregion

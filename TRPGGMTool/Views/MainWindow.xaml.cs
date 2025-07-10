@@ -14,9 +14,25 @@ namespace TRPGGMTool
     {
         public MainWindow()
         {
-            InitializeComponent();
-            RegisterConverters();
-            InitializeViewModel();
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("MainWindow初期化開始");
+
+                InitializeComponent();
+                System.Diagnostics.Debug.WriteLine("InitializeComponent完了");
+
+                RegisterConverters();
+                System.Diagnostics.Debug.WriteLine("RegisterConverters完了");
+
+                InitializeViewModel();
+                System.Diagnostics.Debug.WriteLine("InitializeViewModel完了");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow初期化エラー: {ex}");
+                MessageBox.Show($"初期化エラー: {ex.Message}\n\n詳細:\n{ex}", "エラー");
+                throw;
+            }
         }
 
         /// <summary>
@@ -42,9 +58,10 @@ namespace TRPGGMTool
 
             var fileService = new ScenarioFileService(fileIOService, parser, serializer);
             var businessService = new ScenarioBusinessService();
+            var dialogService = new DialogService();
 
             // ViewModelを作成してDataContextに設定
-            DataContext = new MainViewModel(fileService, businessService);
+            DataContext = new MainViewModel(fileService, businessService, dialogService);
         }
 
         /// <summary>

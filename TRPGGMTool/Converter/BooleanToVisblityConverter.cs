@@ -26,7 +26,7 @@ namespace TRPGGMTool.Converters
             }
 
             // bool以外の値が来た場合はCollapsed
-            return Visibility.Collapsed;
+            return Visibility.Collapsed;                               
         }
 
         /// <summary>
