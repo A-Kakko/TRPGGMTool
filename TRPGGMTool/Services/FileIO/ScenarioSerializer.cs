@@ -1,7 +1,8 @@
 ﻿using System.Text;
 using TRPGGMTool.Interfaces.IModels;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
+using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.Services.FileIO
 {
@@ -84,33 +85,7 @@ namespace TRPGGMTool.Services.FileIO
                     markdown.AppendLine($"メモ: {scene.Memo}");
                 markdown.AppendLine();
 
-                foreach (var item in scene.JudgementTarget)
-                {
-                    markdown.AppendLine($"#### {item.Name}");
-                    if (!string.IsNullOrEmpty(item.Memo))
-                        markdown.AppendLine($"メモ: {item.Memo}");
 
-                    if (item is IJudgementCapable JudgementItem)
-                    {
-                        for (int i = 0; i < JudgementItem.Contents.Count; i++)
-                        {
-                            if (i < scenario.GameSettings.JudgementLevelSettings.LevelNames.Count)
-                            {
-                                var levelName = scenario.GameSettings.JudgementLevelSettings.LevelNames[i];
-                                var text = JudgementItem.Contents[i];
-                                if (!string.IsNullOrEmpty(text))
-                                    markdown.AppendLine($"- {levelName}: {text}");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var displayText = item.GetDisplayText();
-                        if (!string.IsNullOrEmpty(displayText))
-                            markdown.AppendLine(displayText);
-                    }
-                    markdown.AppendLine();
-                }
             }
         }
     }

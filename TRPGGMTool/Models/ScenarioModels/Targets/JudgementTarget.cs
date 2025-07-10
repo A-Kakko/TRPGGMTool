@@ -1,7 +1,7 @@
 ﻿using TRPGGMTool.Interfaces.IModels;
 
 
-namespace TRPGGMTool.Models.ScenarioModels.JudgementTargets
+namespace TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets
 {
     /// <summary>
     /// 判定あり判定対象（探索・秘匿配布用）

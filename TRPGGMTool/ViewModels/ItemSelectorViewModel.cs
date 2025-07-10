@@ -4,6 +4,7 @@ using TRPGGMTool.Commands;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Scenes;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 
 namespace TRPGGMTool.ViewModels
 {
@@ -13,7 +14,7 @@ namespace TRPGGMTool.ViewModels
     public class ItemSelectorViewModel : ViewModeAwareViewModelBase
     {
         private Scene? _currentScene;
-        private IJudgementTarget? _selectedItem;
+        private IJudgementTarget? _selectedTarget;
         private int _selectedIndex = -1;
 
         /// <summary>
@@ -33,18 +34,18 @@ namespace TRPGGMTool.ViewModels
         public ObservableCollection<ItemButtonViewModel> Items { get; }
 
         /// <summary>
-        /// 選択中の項目
+        /// 選択中の判定対象
         /// </summary>
-        public IJudgementTarget? SelectedItem
+        public IJudgementTarget? SelectedTarget
         {
-            get => _selectedItem;
+            get => _selectedTarget;
             set
             {
-                if (SetProperty(ref _selectedItem, value))
+                if (SetProperty(ref _selectedTarget, value))
                 {
-                    _selectedIndex = value != null ? GetItemIndex(value) : -1;
+                    _selectedIndex = value != null ? GetTargetIndex(value) : -1;
                     UpdateSelectedState();
-                    ItemChanged?.Invoke(this, new ItemChangedEventArgs(value));
+                    TargetChanged?.Invoke(this, new TargetChangedEventArgs(value));
                 }
             }
         }
@@ -59,11 +60,11 @@ namespace TRPGGMTool.ViewModels
             {
                 if (value >= 0 && value < Items.Count)
                 {
-                    SelectedItem = Items[value].JudgementTarget;
+                    SelectedTarget = Items[value].Target;
                 }
                 else
                 {
-                    SelectedItem = null;
+                    SelectedTarget = null;
                 }
             }
         }
@@ -99,11 +100,11 @@ namespace TRPGGMTool.ViewModels
 
         #region コマンド
 
-        public ICommand? SelectItemCommand { get; private set; }
+        public ICommand? SelectTargetCommand { get; private set; }
 
         private void InitializeCommands()
         {
-            SelectItemCommand = new RelayCommand<IJudgementTarget>(SelectItem, () => AreItemButtonsEnabled);
+            SelectTargetCommand = new RelayCommand<IJudgementTarget>(SelectTarget, () => AreItemButtonsEnabled);
         }
 
         #endregion
@@ -121,6 +122,18 @@ namespace TRPGGMTool.ViewModels
             OnPropertyChanged(nameof(ItemTypeName));
         }
 
+        /// <summary>
+        /// 判定対象を選択
+        /// </summary>
+        /// <param name="target">選択する判定対象</param>
+        private void SelectTarget(IJudgementTarget? target)
+        {
+            if (AreItemButtonsEnabled)
+            {
+                SelectedTarget = target;
+                System.Diagnostics.Debug.WriteLine($"[ItemSelector] 判定対象選択: {GetDisplayName(target) ?? "なし"}");
+            }
+        }
 
         /// <summary>
         /// 項目一覧を更新
@@ -129,7 +142,7 @@ namespace TRPGGMTool.ViewModels
         {
             Items.Clear();
 
-            if (_currentScene?.JudgementTarget == null) return;
+            if (_currentScene == null) return;
 
             // シーンタイプに応じて項目を処理
             switch (_currentScene.Type)
@@ -148,11 +161,11 @@ namespace TRPGGMTool.ViewModels
             // 最初の項目を自動選択
             if (Items.Count > 0)
             {
-                SelectedItem = Items[0].JudgementTarget;
+                SelectedTarget = Items[0].Target;
             }
             else
             {
-                SelectedItem = null;
+                SelectedTarget = null;
             }
 
             OnPropertyChanged(nameof(HasItems));
@@ -166,11 +179,14 @@ namespace TRPGGMTool.ViewModels
         {
             if (_currentScene is not ExplorationScene explorationScene) return;
 
-            foreach (var judgementTarget in explorationScene.JudgementTarget)
+            var locations = explorationScene.GetAllLocations();
+            for (int i = 0; i < locations.Count; i++)
             {
+                var target = locations[i];
                 var buttonViewModel = new ItemButtonViewModel
                 {
-                    JudgementTarget = judgementTarget,
+                    Target = target,
+                    DisplayName = $"場所{i + 1}", // 場所名がないので連番
                     IsSelected = false,
                     IsEnabled = AreItemButtonsEnabled
                 };
@@ -185,11 +201,11 @@ namespace TRPGGMTool.ViewModels
         {
             if (_currentScene is not SecretDistributionScene secretScene) return;
 
-            foreach (var kvp in secretScene.PlayerItems)
+            foreach (var kvp in secretScene.PlayerTargets)
             {
                 var buttonViewModel = new ItemButtonViewModel
                 {
-                    JudgementTarget = kvp.Value,
+                    Target = kvp.Value,
                     DisplayName = kvp.Key, // プレイヤー名
                     IsSelected = false,
                     IsEnabled = AreItemButtonsEnabled
@@ -205,29 +221,44 @@ namespace TRPGGMTool.ViewModels
         {
             if (_currentScene is not NarrativeScene narrativeScene) return;
 
-            foreach (var item in narrativeScene.JudgementTarget)
+            var buttonViewModel = new ItemButtonViewModel
             {
-                var buttonViewModel = new ItemButtonViewModel
-                {
-                    JudgementTarget = item,
-                    IsSelected = false,
-                    IsEnabled = AreItemButtonsEnabled
-                };
-                Items.Add(buttonViewModel);
-            }
+                Target = narrativeScene.NarrativeTarget,
+                DisplayName = "内容", // 固定名
+                IsSelected = false,
+                IsEnabled = AreItemButtonsEnabled
+            };
+            Items.Add(buttonViewModel);
         }
 
         /// <summary>
-        /// 項目のインデックスを取得
+        /// 判定対象のインデックスを取得
         /// </summary>
-        private int GetItemIndex(IJudgementTarget item)
+        private int GetTargetIndex(IJudgementTarget target)
         {
             for (int i = 0; i < Items.Count; i++)
             {
-                if (Items[i].JudgementTarget == item)
+                if (Items[i].Target == target)
                     return i;
             }
             return -1;
+        }
+
+        /// <summary>
+        /// 表示名を取得
+        /// </summary>
+        private string? GetDisplayName(IJudgementTarget? target)
+        {
+            if (target == null) return null;
+
+            // シーンタイプに応じて表示名を決定
+            return _currentScene?.Type switch
+            {
+                SceneType.SecretDistribution when _currentScene is SecretDistributionScene secretScene =>
+                    secretScene.GetPlayerNameByTarget((JudgementTarget)target),
+                SceneType.Narrative => "内容",
+                _ => "項目"
+            };
         }
 
         /// <summary>
@@ -237,7 +268,7 @@ namespace TRPGGMTool.ViewModels
         {
             foreach (var item in Items)
             {
-                item.IsSelected = item.JudgementTarget == _selectedItem;
+                item.IsSelected = item.Target == _selectedTarget;
             }
         }
 
@@ -260,7 +291,6 @@ namespace TRPGGMTool.ViewModels
             OnPropertyChanged(nameof(AreItemButtonsEnabled));
             UpdateItemButtonStates();
 
-            // コマンドの有効状態を更新
             System.Windows.Input.CommandManager.InvalidateRequerySuggested();
 
             System.Diagnostics.Debug.WriteLine($"[ItemSelector] モード変更: {newMode}, ボタン有効: {AreItemButtonsEnabled}");
@@ -271,23 +301,23 @@ namespace TRPGGMTool.ViewModels
         #region イベント
 
         /// <summary>
-        /// 項目変更イベント
+        /// 判定対象変更イベント
         /// </summary>
-        public event EventHandler<ItemChangedEventArgs>? ItemChanged;
+        public event EventHandler<TargetChangedEventArgs>? TargetChanged;
 
         #endregion
     }
 
     /// <summary>
-    /// 項目変更イベントの引数
+    /// 判定対象変更イベントの引数
     /// </summary>
-    public class ItemChangedEventArgs : EventArgs
+    public class TargetChangedEventArgs : EventArgs
     {
-        public IJudgementTarget? NewItem { get; }
+        public IJudgementTarget? NewTarget { get; }
 
-        public ItemChangedEventArgs(IJudgementTarget? newItem)
+        public TargetChangedEventArgs(IJudgementTarget? newTarget)
         {
-            NewItem = newItem;
+            NewTarget = newTarget;
         }
     }
 }

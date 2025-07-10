@@ -3,7 +3,7 @@ using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.DataAccess.ParseData;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Validation;
 using TRPGGMTool.Services;
 using TRPGGMTool.Services.FileIO;

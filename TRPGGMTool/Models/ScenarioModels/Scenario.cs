@@ -4,7 +4,7 @@ using System.Linq;
 using TRPGGMTool.Models.Settings;
 using TRPGGMTool.Models.Scenes;
 
-namespace TRPGGMTool.Models.ScenarioModels.JudgementTargets
+namespace TRPGGMTool.Models.ScenarioModels
 {
     /// <summary>
     /// シナリオ全体を管理する最上位クラス

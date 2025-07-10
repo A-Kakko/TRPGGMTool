@@ -7,8 +7,9 @@ using TRPGGMTool.Interfaces;
 using TRPGGMTool.Interfaces.IServices;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
+using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.ViewModels
 {
@@ -72,11 +73,6 @@ namespace TRPGGMTool.ViewModels
         /// 閲覧モードかどうか
         /// </summary>
         public bool IsViewMode => CurrentViewMode == ViewMode.View;
-
-        /// <summary>
-        /// モード切り替えコマンド
-        /// </summary>
-        public ICommand? ToggleViewModeCommand { get; private set; }
 
 
         /// <summary>
@@ -212,6 +208,10 @@ namespace TRPGGMTool.ViewModels
         public ICommand? LoadScenarioCommand { get; private set; }
         public ICommand? SaveScenarioCommand { get; private set; }
         public ICommand? SaveAsScenarioCommand { get; private set; }
+        public ICommand? SetEditModeCommand { get; private set; }
+        public ICommand? SetViewModeCommand { get; private set; }
+        public ICommand? ToggleViewModeCommand { get; private set; }
+
 
         private void InitializeCommands()
         {
@@ -219,7 +219,41 @@ namespace TRPGGMTool.ViewModels
             LoadScenarioCommand = new RelayCommand(async () => await LoadScenarioAsync());
             SaveScenarioCommand = new RelayCommand(async () => await SaveScenarioAsync(), () => IsScenarioLoaded);
             SaveAsScenarioCommand = new RelayCommand(async () => await SaveAsScenarioAsync());
+            SetEditModeCommand = new RelayCommand(SetEditMode);
+            SetViewModeCommand = new RelayCommand(SetViewMode);
+            ToggleViewModeCommand = new RelayCommand(ToggleViewMode);
         }
+        #endregion
+
+        #region モード切り替え
+
+        /// <summary>
+        /// 編集モードに設定
+        /// </summary>
+        private void SetEditMode()
+        {
+            CurrentViewMode = ViewMode.Edit;
+            System.Diagnostics.Debug.WriteLine("[MainViewModel] 編集モードに切り替え");
+        }
+
+        /// <summary>
+        /// 閲覧モードに設定
+        /// </summary>
+        private void SetViewMode()
+        {
+            CurrentViewMode = ViewMode.View;
+            System.Diagnostics.Debug.WriteLine("[MainViewModel] 閲覧モードに切り替え");
+        }
+
+        /// <summary>
+        /// 表示モードを切り替え（トグル）
+        /// </summary>
+        private void ToggleViewMode()
+        {
+            CurrentViewMode = CurrentViewMode == ViewMode.Edit ? ViewMode.View : ViewMode.Edit;
+            System.Diagnostics.Debug.WriteLine($"[MainViewModel] モードトグル: {CurrentViewMode}");
+        }
+
         #endregion
 
         #region モード変更
@@ -232,6 +266,40 @@ namespace TRPGGMTool.ViewModels
             foreach (var component in _viewModeAwareComponents)
             {
                 component.SetViewMode(CurrentViewMode);
+            }
+        }
+        /// <summary>
+        /// 現在の表示モード（文字列表示用）
+        /// </summary>
+        public string CurrentViewModeText
+        {
+            get
+            {
+                return CurrentViewMode switch
+                {
+                    ViewMode.Edit => "編集モード",
+                    ViewMode.View => "閲覧モード",
+                    _ => "不明"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 現在の表示モード
+        /// </summary>
+        public ViewMode CurrentViewMode
+        {
+            get => _currentViewMode;
+            set
+            {
+                if (SetProperty(ref _currentViewMode, value))
+                {
+                    // 子ViewModelにモード変更を通知
+                    NotifyViewModeChanged();
+                    OnPropertyChanged(nameof(IsEditMode));
+                    OnPropertyChanged(nameof(IsViewMode));
+                    OnPropertyChanged(nameof(CurrentViewModeText)); // 追加
+                }
             }
         }
 

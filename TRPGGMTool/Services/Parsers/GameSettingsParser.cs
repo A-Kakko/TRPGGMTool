@@ -5,7 +5,7 @@ using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.DataAccess.ParseData;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Settings;
 
 namespace TRPGGMTool.Services.Parsers

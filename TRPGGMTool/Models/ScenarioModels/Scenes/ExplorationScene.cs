@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Settings;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+
 
 namespace TRPGGMTool.Models.Scenes
 {
@@ -30,15 +30,15 @@ namespace TRPGGMTool.Models.Scenes
         /// </summary>
         /// <param name="gameSettings">判定レベル初期化用</param>
         /// <returns>作成されたJudgementTarget</returns>
-        public JudgementTargets.JudgementTarget AddLocation(GameSettings gameSettings)
+        public JudgementTarget AddLocation(GameSettings gameSettings)
         {
             if (gameSettings?.JudgementLevelSettings == null)
                 throw new ArgumentNullException(nameof(gameSettings), "GameSettingsが無効です");
 
-            var target = new JudgementTargets.JudgementTarget();
+            var target = new JudgementTarget();
             target.InitializeJudgementTexts(gameSettings.JudgementLevelSettings.LevelCount);
 
-            JudgementTargets.Add(target);
+            JudgementTarget.Add(target); // ← これが正しい（コレクションのAdd）
             return target;
         }
 
@@ -47,21 +47,21 @@ namespace TRPGGMTool.Models.Scenes
         /// </summary>
         /// <param name="target">削除する判定対象</param>
         /// <returns>削除成功の場合true</returns>
-        public bool RemoveLocation(JudgementTargets.JudgementTarget target)
+        public bool RemoveLocation(JudgementTarget target)
         {
             if (target == null)
                 return false;
 
-            return JudgementTargets.Remove(target);
+            return JudgementTarget.Remove(target);
         }
 
         /// <summary>
         /// すべての探索場所を取得
         /// </summary>
         /// <returns>判定対象のリスト</returns>
-        public List<JudgementTargets.JudgementTarget> GetAllLocations()
+        public List<JudgementTarget> GetAllLocations()
         {
-            return JudgementTargets.OfType<JudgementTargets.JudgementTarget>().ToList();
+            return JudgementTarget.OfType<JudgementTarget>().ToList();
         }
     }
 }

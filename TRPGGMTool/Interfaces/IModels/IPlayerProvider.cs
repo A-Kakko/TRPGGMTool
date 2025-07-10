@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using TRPGGMTool.Models.Settings;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
+
 
 namespace TRPGGMTool.Interfaces.IModels
 {

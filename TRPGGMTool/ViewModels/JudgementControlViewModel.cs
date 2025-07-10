@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using TRPGGMTool.Commands;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.Settings;
@@ -12,25 +13,26 @@ namespace TRPGGMTool.ViewModels
     /// </summary>
     public class JudgementControlViewModel : ViewModeAwareViewModelBase
     {
-        private readonly JudgementLevelSettings _JudgementSettings;
+        private readonly JudgementLevelSettings _judgementSettings;
         private Scene? _currentScene;
+        private IJudgementTarget? _currentTarget;
         private int _selectedJudgementIndex;
         private bool _isVisible;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="JudgementSettings">判定レベル設定</param>
-        public JudgementControlViewModel(JudgementLevelSettings JudgementSettings)
+        /// <param name="judgementSettings">判定レベル設定</param>
+        public JudgementControlViewModel(JudgementLevelSettings judgementSettings)
         {
-            _JudgementSettings = JudgementSettings ?? throw new ArgumentNullException(nameof(JudgementSettings));
+            _judgementSettings = judgementSettings ?? throw new ArgumentNullException(nameof(judgementSettings));
 
             JudgementLevels = new ObservableCollection<JudgementLevelViewModel>();
             InitializeJudgementLevels();
             InitializeCommands();
 
             // デフォルト選択
-            _selectedJudgementIndex = _JudgementSettings.DefaultLevelIndex;
+            _selectedJudgementIndex = _judgementSettings.DefaultLevelIndex;
             UpdateSelectedState();
         }
 
@@ -67,9 +69,9 @@ namespace TRPGGMTool.ViewModels
         }
 
         /// <summary>
-        /// 判定ボタンが有効かどうか（地の文シーンでなく、かつ編集モードの場合）
+        /// 判定ボタンが有効かどうか（判定対象が判定機能を持ち、かつ編集モードの場合）
         /// </summary>
-        public bool IsEnabled => _currentScene?.Type != SceneType.Narrative && IsEditMode;
+        public bool IsEnabled => (_currentTarget?.HasJudgementLevels ?? false) && IsEditMode;
 
         #endregion
 
@@ -86,12 +88,34 @@ namespace TRPGGMTool.ViewModels
 
         #region メソッド
 
+        /// <summary>
+        /// 現在のシーンを設定
+        /// </summary>
+        /// <param name="scene">現在のシーン</param>
         public void SetCurrentScene(Scene? scene)
         {
             _currentScene = scene;
+            UpdateVisibilityAndState();
+        }
 
-            // nullの場合は非表示
-            IsVisible = scene != null;
+        /// <summary>
+        /// 現在の判定対象を設定
+        /// </summary>
+        /// <param name="target">現在の判定対象</param>
+        public void SetCurrentTarget(IJudgementTarget? target)
+        {
+            _currentTarget = target;
+            UpdateVisibilityAndState();
+        }
+
+        /// <summary>
+        /// 表示状態と有効状態を更新
+        /// </summary>
+        private void UpdateVisibilityAndState()
+        {
+            // 判定対象が判定機能を持つ場合のみ表示
+            IsVisible = _currentTarget?.HasJudgementLevels ?? false;
+
             OnPropertyChanged(nameof(IsEnabled));
 
             // ボタンの有効状態を更新
@@ -100,7 +124,7 @@ namespace TRPGGMTool.ViewModels
                 level.IsEnabled = IsEnabled;
             }
 
-            System.Diagnostics.Debug.WriteLine($"[JudgementControl] シーン設定: {scene?.Name ?? "null"}");
+            System.Diagnostics.Debug.WriteLine($"[JudgementControl] 対象設定: {_currentTarget?.GetType().Name ?? "null"}, 表示: {IsVisible}, 有効: {IsEnabled}");
         }
 
         /// <summary>
@@ -122,12 +146,12 @@ namespace TRPGGMTool.ViewModels
         {
             JudgementLevels.Clear();
 
-            for (int i = 0; i < _JudgementSettings.LevelNames.Count; i++)
+            for (int i = 0; i < _judgementSettings.LevelNames.Count; i++)
             {
                 var levelViewModel = new JudgementLevelViewModel
                 {
                     Index = i,
-                    Name = _JudgementSettings.LevelNames[i],
+                    Name = _judgementSettings.LevelNames[i],
                     IsSelected = false,
                     IsEnabled = true
                 };
@@ -157,7 +181,6 @@ namespace TRPGGMTool.ViewModels
             System.Diagnostics.Debug.WriteLine($"[JudgementControl] モード変更: {newMode}");
         }
 
-
         /// <summary>
         /// ボタンの状態を更新
         /// </summary>
@@ -168,7 +191,6 @@ namespace TRPGGMTool.ViewModels
                 level.IsEnabled = IsEnabled;
             }
         }
-
 
         #endregion
 
@@ -226,9 +248,9 @@ namespace TRPGGMTool.ViewModels
     {
         public int JudgementIndex { get; }
 
-        public JudgementChangedEventArgs(int JudgementIndex)
+        public JudgementChangedEventArgs(int judgementIndex)
         {
-            JudgementIndex = JudgementIndex;
+            JudgementIndex = judgementIndex;
         }
     }
 }

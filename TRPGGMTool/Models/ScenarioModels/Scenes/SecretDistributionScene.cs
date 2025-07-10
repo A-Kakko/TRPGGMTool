@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using TRPGGMTool.Interfaces.IModels;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Settings;
+
 
 namespace TRPGGMTool.Models.Scenes
 {
@@ -41,7 +42,7 @@ namespace TRPGGMTool.Models.Scenes
                 throw new ArgumentNullException(nameof(gameSettings), "GameSettingsが無効です");
 
             // 既存の項目をクリア
-            JudgementTargets.Clear();
+            JudgementTarget.Clear();  // ← これが正しい（コレクションのClear）
             PlayerTargets.Clear();
 
             // このシナリオで使用するプレイヤー分のJudgementTargetを作成
@@ -53,13 +54,13 @@ namespace TRPGGMTool.Models.Scenes
                     continue;
 
                 var target = new JudgementTarget();
-                target.InitializeJudgementTexts(gameSettings.JudgmentLevelSettings.LevelCount);
+                target.InitializeJudgementTexts(gameSettings.JudgementLevelSettings.LevelCount);
 
                 // プレイヤーターゲットの辞書に追加
                 PlayerTargets[playerName] = target;
 
                 // シーンの判定対象リストにも追加
-                JudgementTargets.Add(target);
+                JudgementTarget.Add(target);  // ← これが正しい（コレクションのAdd）
             }
         }
 

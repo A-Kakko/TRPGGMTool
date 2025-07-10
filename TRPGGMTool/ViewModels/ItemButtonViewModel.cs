@@ -11,9 +11,9 @@ namespace TRPGGMTool.ViewModels
         private bool _isEnabled = true;
 
         /// <summary>
-        /// 対応する項目
+        /// 対応する判定対象
         /// </summary>
-        public IJudgementTarget? JudgementTarget { get; set; }
+        public IJudgementTarget? Target { get; set; }
 
         /// <summary>
         /// 表示名

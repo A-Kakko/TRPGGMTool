@@ -1,6 +1,6 @@
 ﻿using TRPGGMTool.Interfaces.IModels;
 
-namespace TRPGGMTool.Models.ScenarioModels.JudgementTargets
+namespace TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets
 {
     /// <summary>
     /// 地の文用判定対象（判定機能なし）

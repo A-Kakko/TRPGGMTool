@@ -1,7 +1,7 @@
 ﻿using System;
 using TRPGGMTool.Models.DataAccess.ParseData;
 
-namespace TRPGGMTool.Models.ScenarioModels.JudgementTargets
+namespace TRPGGMTool.Models.ScenarioModels
 {
     /// <summary>
     /// シナリオのメタ情報を管理するクラス

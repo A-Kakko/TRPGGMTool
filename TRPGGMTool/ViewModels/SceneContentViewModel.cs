@@ -1,4 +1,5 @@
-﻿using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+﻿using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Settings;
 
 namespace TRPGGMTool.ViewModels
@@ -57,7 +58,7 @@ namespace TRPGGMTool.ViewModels
         {
             System.Diagnostics.Debug.WriteLine($"[SceneContent] シーン設定: {scene?.Name ?? "null"}");
 
-            // nullでも正常に処理するように修正
+            // 各ViewModelにシーン設定
             JudgementControl.SetCurrentScene(scene);
             ItemSelector.SetCurrentScene(scene);
             ContentDisplay.SetCurrentScene(scene);
@@ -74,7 +75,7 @@ namespace TRPGGMTool.ViewModels
             JudgementControl.JudgementChanged += OnJudgementChanged;
 
             // 項目選択変更時の処理
-            ItemSelector.ItemChanged += OnItemChanged;
+            ItemSelector.TargetChanged += OnTargetChanged;
 
             // コピー完了・エラー時の処理（必要に応じて上位に通知）
             ContentDisplay.TextCopied += OnTextCopied;
@@ -90,11 +91,15 @@ namespace TRPGGMTool.ViewModels
         }
 
         /// <summary>
-        /// 項目選択変更時の処理
+        /// 判定対象選択変更時の処理
         /// </summary>
-        private void OnItemChanged(object? sender, ItemChangedEventArgs e)
+        private void OnTargetChanged(object? sender, TargetChangedEventArgs e)
         {
-            ContentDisplay.SetCurrentItem(e.NewItem);
+            // 判定制御に現在の対象を設定
+            JudgementControl.SetCurrentTarget(e.NewTarget);
+
+            // コンテンツ表示に現在の対象を設定
+            ContentDisplay.SetCurrentTarget(e.NewTarget);
         }
 
         /// <summary>
@@ -106,7 +111,7 @@ namespace TRPGGMTool.ViewModels
             ContentDisplay.SetCurrentJudgement(JudgementControl.SelectedJudgementIndex);
 
             // 現在の項目をコンテンツ表示に反映
-            ContentDisplay.SetCurrentItem(ItemSelector.SelectedItem);
+            ContentDisplay.SetCurrentTarget(ItemSelector.SelectedTarget);
         }
 
         /// <summary>
@@ -135,9 +140,6 @@ namespace TRPGGMTool.ViewModels
         {
             // 判定ボタンの再構築が必要な場合の処理
             // 現在の実装では判定レベル設定は固定だが、将来の拡張に備える
-
-            // 必要に応じてJudgementControlViewModelの再初期化
-            // または設定更新メソッドの呼び出し
         }
 
         /// <summary>
@@ -147,7 +149,7 @@ namespace TRPGGMTool.ViewModels
         {
             // イベントハンドラーの解除
             JudgementControl.JudgementChanged -= OnJudgementChanged;
-            ItemSelector.ItemChanged -= OnItemChanged;
+            ItemSelector.TargetChanged -= OnTargetChanged;
             ContentDisplay.TextCopied -= OnTextCopied;
             ContentDisplay.CopyError -= OnCopyError;
         }

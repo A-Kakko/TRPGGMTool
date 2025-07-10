@@ -3,8 +3,10 @@ using TRPGGMTool.Interfaces.IServices;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Services.FileIO;
+using TRPGGMTool.Models.ScenarioModels;
+
 
 namespace TRPGGMTool.Services
 {

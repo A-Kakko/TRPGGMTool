@@ -21,6 +21,21 @@
             <Setter Property="Margin" Value="10"/>
             <Setter Property="Padding" Value="10"/>
         </Style>
+
+        <!-- ツールバーボタンスタイル -->
+        <Style x:Key="ToolBarButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <!-- 選択状態のツールバーボタンスタイル -->
+        <Style x:Key="SelectedToolBarButtonStyle" TargetType="Button" BasedOn="{StaticResource ToolBarButtonStyle}">
+            <Setter Property="Background" Value="LightBlue"/>
+            <Setter Property="BorderBrush" Value="DarkBlue"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -50,6 +65,64 @@
                 </MenuItem>
             </Menu>
 
+            <!-- ツールバー -->
+            <ToolBar DockPanel.Dock="Top" ToolBarTray.IsLocked="True">
+                <Label Content="表示モード:" VerticalAlignment="Center" FontWeight="Bold"/>
+
+                <!-- 編集モードボタン -->
+                <Button Content="📝 編集モード" 
+                        Command="{Binding SetEditModeCommand}"
+                        ToolTip="編集モードに切り替え（すべての編集機能が有効）">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource ToolBarButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                    <Setter Property="Background" Value="LightGreen"/>
+                                    <Setter Property="BorderBrush" Value="DarkGreen"/>
+                                    <Setter Property="BorderThickness" Value="2"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <!-- 閲覧モードボタン -->
+                <Button Content="👁️ 閲覧モード" 
+                        Command="{Binding SetViewModeCommand}"
+                        ToolTip="閲覧モードに切り替え（コピー機能のみ有効）">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource ToolBarButtonStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsViewMode}" Value="True">
+                                    <Setter Property="Background" Value="LightBlue"/>
+                                    <Setter Property="BorderBrush" Value="DarkBlue"/>
+                                    <Setter Property="BorderThickness" Value="2"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Separator/>
+
+                <!-- 現在のモード表示 -->
+                <Label Content="現在:" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding CurrentViewMode}" 
+                          VerticalAlignment="Center" 
+                          FontWeight="Bold"
+                          Foreground="DarkBlue"/>
+
+                <Separator/>
+
+                <!-- 未保存変更表示 -->
+                <StackPanel Orientation="Horizontal" 
+                           VerticalAlignment="Center"
+                           Visibility="{Binding HasUnsavedChanges, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Label Content="⚠️" VerticalAlignment="Center" Foreground="Orange"/>
+                    <Label Content="未保存の変更があります" VerticalAlignment="Center" Foreground="Orange" FontWeight="Bold"/>
+                </StackPanel>
+            </ToolBar>
+
             <!-- メインコンテンツ -->
             <Grid>
                 <Grid.RowDefinitions>
@@ -74,17 +147,20 @@
                         <Label Grid.Row="0" Grid.Column="0" Content="タイトル:" />
                         <TextBox Grid.Row="0" Grid.Column="1" 
                                 Text="{Binding ScenarioTitle, UpdateSourceTrigger=PropertyChanged}" 
-                                Margin="5" />
+                                Margin="5"
+                                IsReadOnly="{Binding IsViewMode}"/>
 
                         <Label Grid.Row="1" Grid.Column="0" Content="作成者:" />
                         <TextBox Grid.Row="1" Grid.Column="1" 
                                 Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}" 
-                                Margin="5" />
+                                Margin="5"
+                                IsReadOnly="{Binding IsViewMode}"/>
 
                         <Label Grid.Row="2" Grid.Column="0" Content="説明:" />
                         <TextBox Grid.Row="2" Grid.Column="1" 
                                 Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
-                                Margin="5" TextWrapping="Wrap" Height="60" />
+                                Margin="5" TextWrapping="Wrap" Height="60"
+                                IsReadOnly="{Binding IsViewMode}"/>
                     </Grid>
                 </GroupBox>
 
@@ -159,7 +235,11 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- 左側: 判定ボタン領域 -->
-                            <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,10,0">
+                            <Border Grid.Column="0" 
+                                    BorderBrush="Gray" 
+                                    BorderThickness="1" 
+                                    Margin="0,0,10,0"
+                                    Visibility="{Binding JudgementControl.IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel DataContext="{Binding JudgementControl}" Margin="5">
                                         <TextBlock Text="判定レベル" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center"/>
@@ -218,8 +298,8 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Button Content="{Binding DisplayName}"
-                                                               Command="{Binding DataContext.SelectItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                               CommandParameter="{Binding Item}"
+                                                               Command="{Binding DataContext.SelectTargetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                               CommandParameter="{Binding Target}"
                                                                Margin="0,0,5,0"
                                                                Padding="10,5">
                                                             <Button.Style>
@@ -244,7 +324,7 @@
                                 <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,5">
                                     <StackPanel Orientation="Horizontal" DataContext="{Binding ContentDisplay}">
                                         <TextBlock Text="{Binding ItemTypeLabel}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="{Binding ItemName}" 
+                                        <TextBlock Text="{Binding TargetName}" 
                                                   VerticalAlignment="Center" 
                                                   FontWeight="Bold"
                                                   FontSize="14"/>

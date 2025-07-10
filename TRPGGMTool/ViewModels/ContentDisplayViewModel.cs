@@ -3,6 +3,7 @@ using TRPGGMTool.Commands;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Scenes;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 
 namespace TRPGGMTool.ViewModels
 {
@@ -12,10 +13,10 @@ namespace TRPGGMTool.ViewModels
     public class ContentDisplayViewModel : ViewModeAwareViewModelBase
     {
         private Scene? _currentScene;
-        private IJudgementTarget? _currentItem;
+        private IJudgementTarget? _currentTarget;
         private int _currentJudgementIndex;
         private string _displayText = "";
-        private string _itemName = "";
+        private string _targetName = "";
         private bool _hasContent;
 
         /// <summary>
@@ -38,12 +39,12 @@ namespace TRPGGMTool.ViewModels
         }
 
         /// <summary>
-        /// 現在の項目名（プレイヤー名/場所名/項目名）
+        /// 現在の判定対象名（プレイヤー名/場所名/項目名）
         /// </summary>
-        public string ItemName
+        public string TargetName
         {
-            get => _itemName;
-            private set => SetProperty(ref _itemName, value);
+            get => _targetName;
+            private set => SetProperty(ref _targetName, value);
         }
 
         /// <summary>
@@ -59,7 +60,6 @@ namespace TRPGGMTool.ViewModels
         /// コピーボタンが有効かどうか（閲覧モードかつコンテンツがある場合）
         /// </summary>
         public bool CanCopy => HasContent && !string.IsNullOrWhiteSpace(DisplayText) && IsViewMode;
-
 
         /// <summary>
         /// 現在のシーンタイプに応じた項目種別名
@@ -105,22 +105,22 @@ namespace TRPGGMTool.ViewModels
         }
 
         /// <summary>
-        /// 現在の項目を設定
+        /// 現在の判定対象を設定
         /// </summary>
-        /// <param name="item">現在の項目</param>
-        public void SetCurrentItem(IJudgeementTarget? item)
+        /// <param name="target">現在の判定対象</param>
+        public void SetCurrentTarget(IJudgementTarget? target)
         {
-            _currentItem = item;
+            _currentTarget = target;
             UpdateDisplay();
         }
 
         /// <summary>
         /// 現在の判定レベルを設定
         /// </summary>
-        /// <param name="JudgementIndex">判定レベルのインデックス</param>
-        public void SetCurrentJudgement(int JudgementIndex)
+        /// <param name="judgementIndex">判定レベルのインデックス</param>
+        public void SetCurrentJudgement(int judgementIndex)
         {
-            _currentJudgementIndex = JudgementIndex;
+            _currentJudgementIndex = judgementIndex;
             UpdateDisplay();
         }
 
@@ -129,6 +129,14 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         private void UpdateDisplay()
         {
+            if (_currentTarget == null)
+            {
+                ClearDisplay();
+                return;
+            }
+
+            // 判定対象名を設定
+            TargetName = GetDisplayTargetName();
 
             // 表示テキストを取得
             DisplayText = GetDisplayText();
@@ -145,31 +153,38 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         private void ClearDisplay()
         {
-            ItemName = "";
+            TargetName = "";
             DisplayText = "";
             HasContent = false;
             OnPropertyChanged(nameof(CanCopy));
         }
 
+        /// <summary>
+        /// 表示用の判定対象名を取得
+        /// </summary>
+        private string GetDisplayTargetName()
+        {
+            if (_currentTarget == null) return "";
 
+            // シーンタイプに応じて表示名を決定
+            return _currentScene?.Type switch
+            {
+                SceneType.SecretDistribution when _currentScene is SecretDistributionScene secretScene =>
+                    secretScene.GetPlayerNameByTarget((JudgementTarget)_currentTarget) ?? "不明",
+                SceneType.Narrative => "内容",
+                SceneType.Exploration => $"場所", // 場所名がないので仮
+                _ => "項目"
+            };
+        }
 
         /// <summary>
         /// 表示用テキストを取得
         /// </summary>
         private string GetDisplayText()
         {
-            if (_currentItem == null) return "";
+            if (_currentTarget == null) return "";
 
-            // 判定機能を持つ項目の場合
-            if (_currentItem is IJudgementCapable JudgementItem)
-            {
-                return JudgementItem.Contents.Count > _currentJudgementIndex
-                    ? JudgementItem.Contents[_currentJudgementIndex] ?? ""
-                    : "";
-            }
-
-            // 地の文項目の場合（判定インデックスは無視）
-            return _currentItem.GetDisplayText();
+            return _currentTarget.GetDisplayText(_currentJudgementIndex);
         }
 
         /// <summary>

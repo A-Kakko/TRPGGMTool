@@ -1,5 +1,5 @@
-﻿using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
-using TRPGGMTool.Models.ScnarioM
+﻿using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
+
 
 namespace TRPGGMTool.Models.Scenes
 {
@@ -30,8 +30,8 @@ namespace TRPGGMTool.Models.Scenes
             NarrativeTarget = new NarrativeTarget();
 
             // JudgementTargetsには固定項目のみを追加
-            JudgementTargets.Clear();
-            JudgementTargets.Add(NarrativeTarget);
+            JudgementTarget.Clear();
+            JudgementTarget.Add(NarrativeTarget);
         }
 
         /// <summary>
