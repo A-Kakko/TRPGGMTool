@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.DataAccess.ParseData;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Settings;
 
 namespace TRPGGMTool.Services.Parsers
@@ -62,10 +62,10 @@ namespace TRPGGMTool.Services.Parsers
                         gameSettingsData.PlayerData = result.data;
                         i = result.nextIndex;
                     }
-                    else if (TryMatchAnyPattern(line, _formatConfig.Sections.JudgmentSubHeaders, out _))
+                    else if (TryMatchAnyPattern(line, _formatConfig.Sections.JudgementSubHeaders, out _))
                     {
-                        var result = ParseJudgmentLevelSettings(lines, i + 1);
-                        gameSettingsData.JudgmentData = result.data;
+                        var result = ParseJudgementLevelSettings(lines, i + 1);
+                        gameSettingsData.JudgementData = result.data;
                         i = result.nextIndex;
                     }
                     else
@@ -180,9 +180,9 @@ namespace TRPGGMTool.Services.Parsers
         /// <param name="lines">解析対象行配列</param>
         /// <param name="startIndex">開始インデックス</param>
         /// <returns>判定レベル設定データと次のインデックス</returns>
-        private (JudgmentLevelData data, int nextIndex) ParseJudgmentLevelSettings(string[] lines, int startIndex)
+        private (JudgementLevelData data, int nextIndex) ParseJudgementLevelSettings(string[] lines, int startIndex)
         {
-            var data = new JudgmentLevelData();
+            var data = new JudgementLevelData();
             int i = startIndex;
 
             while (i < lines.Length)

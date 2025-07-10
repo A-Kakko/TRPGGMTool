@@ -1,9 +1,9 @@
 ﻿using TRPGGMTool.Interfaces;
 using TRPGGMTool.Interfaces.IServices;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Services.FileIO;
 
 namespace TRPGGMTool.Services

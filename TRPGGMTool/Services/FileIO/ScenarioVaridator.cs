@@ -1,4 +1,4 @@
-﻿using TRPGGMTool.Models.ScenarioModels;
+﻿using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Validation;
 
 namespace TRPGGMTool.Services.FileIO
@@ -21,7 +21,7 @@ namespace TRPGGMTool.Services.FileIO
             if (scenario.GameSettings.GetScenarioPlayerCount() < 1)
                 result.AddError("シナリオプレイヤー数は1人以上である必要があります");
 
-            if (scenario.GameSettings.JudgmentLevelSettings.LevelCount < 2)
+            if (scenario.GameSettings.JudgementLevelSettings.LevelCount < 2)
                 result.AddError("判定レベルは最低2段階必要です");
 
             if (scenario.Scenes.Count == 0)

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Linq;
-using TRPGGMTool.Models.Items;
+﻿using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
+using TRPGGMTool.Models.ScnarioM
 
 namespace TRPGGMTool.Models.Scenes
 {
     /// <summary>
     /// 地の文シーン
-    /// 基本描写、NPC情報、アイテム情報など判定を伴わない情報を管理
+    /// 常に1つの固定項目のみを持つ
     /// </summary>
     public class NarrativeScene : Scene
     {
@@ -16,79 +15,40 @@ namespace TRPGGMTool.Models.Scenes
         public override SceneType Type => SceneType.Narrative;
 
         /// <summary>
+        /// 固定の判定対象項目
+        /// </summary>
+        public NarrativeTarget NarrativeTarget { get; private set; }
+
+        /// <summary>
         /// コンストラクタ
         /// </summary>
         public NarrativeScene()
         {
             Name = "地の文シーン";
+
+            // 地の文用の固定項目を初期化
+            NarrativeTarget = new NarrativeTarget();
+
+            // JudgementTargetsには固定項目のみを追加
+            JudgementTargets.Clear();
+            JudgementTargets.Add(NarrativeTarget);
         }
 
         /// <summary>
-        /// 新しい情報項目を追加
+        /// 内容を設定
         /// </summary>
-        /// <param name="itemName">項目名（NPC名、アイテム名など）</param>
-        /// <param name="content">内容テキスト</param>
-        /// <returns>作成されたNarrativeItem</returns>
-        public NarrativeItem AddNarrativeItem(string? itemName, string? content = "")
+        /// <param name="content">新しい内容</param>
+        public void SetContent(string content)
         {
-            if (string.IsNullOrWhiteSpace(itemName))
-                throw new ArgumentException("項目名が無効です", nameof(itemName));
-
-            var item = new NarrativeItem
-            {
-                Name = itemName,
-                Content = content ?? ""
-            };
-
-            Items.Add(item);
-            return item;
+            NarrativeTarget.SetContent(content);
         }
 
         /// <summary>
-        /// 指定された名前の項目を取得
+        /// 内容を取得
         /// </summary>
-        /// <param name="itemName">項目名</param>
-        /// <returns>対応するNarrativeItem、存在しない場合はnull</returns>
-        public NarrativeItem? GetNarrativeItem(string? itemName)
+        public string GetContent()
         {
-            if (string.IsNullOrWhiteSpace(itemName))
-                return null;
-
-            return Items.OfType<NarrativeItem>().FirstOrDefault(item => item.Name == itemName);
-        }
-
-        /// <summary>
-        /// 重複チェック付きで項目を追加
-        /// </summary>
-        /// <param name="itemName">項目名</param>
-        /// <param name="content">内容テキスト</param>
-        /// <returns>作成または既存のNarrativeItem</returns>
-        public NarrativeItem AddOrGetNarrativeItem(string? itemName, string? content = "")
-        {
-            var existingItem = GetNarrativeItem(itemName);
-            if (existingItem != null)
-            {
-                // 既存項目がある場合、contentが指定されていれば更新
-                if (!string.IsNullOrEmpty(content))
-                    existingItem.Content = content;
-                return existingItem;
-            }
-
-            return AddNarrativeItem(itemName, content);
-        }
-
-        /// <summary>
-        /// 項目を削除
-        /// </summary>
-        /// <param name="itemName">削除する項目名</param>
-        /// <returns>削除成功の場合true</returns>
-        public bool RemoveNarrativeItem(string? itemName)
-        {
-            var item = GetNarrativeItem(itemName);
-            if (item == null)
-                return false;
-
-            return Items.Remove(item);
+            return NarrativeTarget.GetDisplayText(0);
         }
     }
 }

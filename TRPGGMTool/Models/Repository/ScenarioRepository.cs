@@ -1,5 +1,5 @@
-﻿using TRPGGMTool.Interfaces.Model;
-using TRPGGMTool.Models.ScenarioModels;
+﻿using TRPGGMTool.Interfaces.IModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 
 namespace TRPGGMTool.Models.Repositories
 {

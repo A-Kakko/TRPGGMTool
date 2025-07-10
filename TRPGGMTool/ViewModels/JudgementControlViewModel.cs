@@ -10,27 +10,27 @@ namespace TRPGGMTool.ViewModels
     /// <summary>
     /// 判定レベル選択ボタンの表示・制御を管理するViewModel
     /// </summary>
-    public class JudgmentControlViewModel : ViewModeAwareViewModelBase
+    public class JudgementControlViewModel : ViewModeAwareViewModelBase
     {
-        private readonly JudgmentLevelSettings _judgmentSettings;
+        private readonly JudgementLevelSettings _JudgementSettings;
         private Scene? _currentScene;
-        private int _selectedJudgmentIndex;
+        private int _selectedJudgementIndex;
         private bool _isVisible;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="judgmentSettings">判定レベル設定</param>
-        public JudgmentControlViewModel(JudgmentLevelSettings judgmentSettings)
+        /// <param name="JudgementSettings">判定レベル設定</param>
+        public JudgementControlViewModel(JudgementLevelSettings JudgementSettings)
         {
-            _judgmentSettings = judgmentSettings ?? throw new ArgumentNullException(nameof(judgmentSettings));
+            _JudgementSettings = JudgementSettings ?? throw new ArgumentNullException(nameof(JudgementSettings));
 
-            JudgmentLevels = new ObservableCollection<JudgmentLevelViewModel>();
-            InitializeJudgmentLevels();
+            JudgementLevels = new ObservableCollection<JudgementLevelViewModel>();
+            InitializeJudgementLevels();
             InitializeCommands();
 
             // デフォルト選択
-            _selectedJudgmentIndex = _judgmentSettings.DefaultLevelIndex;
+            _selectedJudgementIndex = _JudgementSettings.DefaultLevelIndex;
             UpdateSelectedState();
         }
 
@@ -39,20 +39,20 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// 判定レベルのボタン一覧
         /// </summary>
-        public ObservableCollection<JudgmentLevelViewModel> JudgmentLevels { get; }
+        public ObservableCollection<JudgementLevelViewModel> JudgementLevels { get; }
 
         /// <summary>
         /// 選択中の判定レベルインデックス
         /// </summary>
-        public int SelectedJudgmentIndex
+        public int SelectedJudgementIndex
         {
-            get => _selectedJudgmentIndex;
+            get => _selectedJudgementIndex;
             set
             {
-                if (SetProperty(ref _selectedJudgmentIndex, value))
+                if (SetProperty(ref _selectedJudgementIndex, value))
                 {
                     UpdateSelectedState();
-                    JudgmentChanged?.Invoke(this, new JudgmentChangedEventArgs(value));
+                    JudgementChanged?.Invoke(this, new JudgementChangedEventArgs(value));
                 }
             }
         }
@@ -75,11 +75,11 @@ namespace TRPGGMTool.ViewModels
 
         #region コマンド
 
-        public ICommand? SelectJudgmentCommand { get; private set; }
+        public ICommand? SelectJudgementCommand { get; private set; }
 
         private void InitializeCommands()
         {
-            SelectJudgmentCommand = new RelayCommand<int>(SelectJudgment);
+            SelectJudgementCommand = new RelayCommand<int>(SelectJudgement);
         }
 
         #endregion
@@ -95,44 +95,44 @@ namespace TRPGGMTool.ViewModels
             OnPropertyChanged(nameof(IsEnabled));
 
             // ボタンの有効状態を更新
-            foreach (var level in JudgmentLevels)
+            foreach (var level in JudgementLevels)
             {
                 level.IsEnabled = IsEnabled;
             }
 
-            System.Diagnostics.Debug.WriteLine($"[JudgmentControl] シーン設定: {scene?.Name ?? "null"}");
+            System.Diagnostics.Debug.WriteLine($"[JudgementControl] シーン設定: {scene?.Name ?? "null"}");
         }
 
         /// <summary>
         /// 判定レベルを選択
         /// </summary>
         /// <param name="index">選択する判定レベルのインデックス</param>
-        private void SelectJudgment(int index)
+        private void SelectJudgement(int index)
         {
-            if (index >= 0 && index < JudgmentLevels.Count && IsEnabled)
+            if (index >= 0 && index < JudgementLevels.Count && IsEnabled)
             {
-                SelectedJudgmentIndex = index;
+                SelectedJudgementIndex = index;
             }
         }
 
         /// <summary>
         /// 判定レベル一覧を初期化
         /// </summary>
-        private void InitializeJudgmentLevels()
+        private void InitializeJudgementLevels()
         {
-            JudgmentLevels.Clear();
+            JudgementLevels.Clear();
 
-            for (int i = 0; i < _judgmentSettings.LevelNames.Count; i++)
+            for (int i = 0; i < _JudgementSettings.LevelNames.Count; i++)
             {
-                var levelViewModel = new JudgmentLevelViewModel
+                var levelViewModel = new JudgementLevelViewModel
                 {
                     Index = i,
-                    Name = _judgmentSettings.LevelNames[i],
+                    Name = _JudgementSettings.LevelNames[i],
                     IsSelected = false,
                     IsEnabled = true
                 };
 
-                JudgmentLevels.Add(levelViewModel);
+                JudgementLevels.Add(levelViewModel);
             }
         }
 
@@ -141,9 +141,9 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         private void UpdateSelectedState()
         {
-            for (int i = 0; i < JudgmentLevels.Count; i++)
+            for (int i = 0; i < JudgementLevels.Count; i++)
             {
-                JudgmentLevels[i].IsSelected = (i == _selectedJudgmentIndex);
+                JudgementLevels[i].IsSelected = (i == _selectedJudgementIndex);
             }
         }
 
@@ -154,7 +154,7 @@ namespace TRPGGMTool.ViewModels
         {
             OnPropertyChanged(nameof(IsEnabled));
             UpdateButtonStates();
-            System.Diagnostics.Debug.WriteLine($"[JudgmentControl] モード変更: {newMode}");
+            System.Diagnostics.Debug.WriteLine($"[JudgementControl] モード変更: {newMode}");
         }
 
 
@@ -163,7 +163,7 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         private void UpdateButtonStates()
         {
-            foreach (var level in JudgmentLevels)
+            foreach (var level in JudgementLevels)
             {
                 level.IsEnabled = IsEnabled;
             }
@@ -177,7 +177,7 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// 判定レベル変更イベント
         /// </summary>
-        public event EventHandler<JudgmentChangedEventArgs>? JudgmentChanged;
+        public event EventHandler<JudgementChangedEventArgs>? JudgementChanged;
 
         #endregion
     }
@@ -185,7 +185,7 @@ namespace TRPGGMTool.ViewModels
     /// <summary>
     /// 個別の判定レベルボタンを表すViewModel
     /// </summary>
-    public class JudgmentLevelViewModel : ViewModelBase
+    public class JudgementLevelViewModel : ViewModelBase
     {
         private bool _isSelected;
         private bool _isEnabled = true;
@@ -222,13 +222,13 @@ namespace TRPGGMTool.ViewModels
     /// <summary>
     /// 判定レベル変更イベントの引数
     /// </summary>
-    public class JudgmentChangedEventArgs : EventArgs
+    public class JudgementChangedEventArgs : EventArgs
     {
-        public int JudgmentIndex { get; }
+        public int JudgementIndex { get; }
 
-        public JudgmentChangedEventArgs(int judgmentIndex)
+        public JudgementChangedEventArgs(int JudgementIndex)
         {
-            JudgmentIndex = judgmentIndex;
+            JudgementIndex = JudgementIndex;
         }
     }
 }

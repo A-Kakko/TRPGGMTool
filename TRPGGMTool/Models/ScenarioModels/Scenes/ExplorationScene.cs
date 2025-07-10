@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using TRPGGMTool.Models.Items;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Settings;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 
 namespace TRPGGMTool.Models.Scenes
 {
@@ -28,54 +28,40 @@ namespace TRPGGMTool.Models.Scenes
         /// <summary>
         /// 新しい探索場所を追加
         /// </summary>
-        /// <param name="locationName">場所名</param>
         /// <param name="gameSettings">判定レベル初期化用</param>
-        /// <returns>作成されたVariableItem</returns>
-        public VariableItem AddLocation(string? locationName, GameSettings? gameSettings)
+        /// <returns>作成されたJudgementTarget</returns>
+        public JudgementTargets.JudgementTarget AddLocation(GameSettings gameSettings)
         {
-            if (string.IsNullOrWhiteSpace(locationName))
-                throw new ArgumentException("場所名が無効です", nameof(locationName));
-
-            if (gameSettings?.JudgmentLevelSettings == null)
+            if (gameSettings?.JudgementLevelSettings == null)
                 throw new ArgumentNullException(nameof(gameSettings), "GameSettingsが無効です");
 
-            var item = new VariableItem
-            {
-                Name = locationName
-            };
+            var target = new JudgementTargets.JudgementTarget();
+            target.InitializeJudgementTexts(gameSettings.JudgementLevelSettings.LevelCount);
 
-            item.InitializeJudgmentTexts(gameSettings.JudgmentLevelSettings.LevelCount);
-            Items.Add(item);
-
-            return item;
+            JudgementTargets.Add(target);
+            return target;
         }
 
         /// <summary>
-        /// 指定された名前の場所を取得
+        /// 場所を削除
         /// </summary>
-        /// <param name="locationName">場所名</param>
-        /// <returns>対応するVariableItem、存在しない場合はnull</returns>
-        public VariableItem? GetLocation(string? locationName)
+        /// <param name="target">削除する判定対象</param>
+        /// <returns>削除成功の場合true</returns>
+        public bool RemoveLocation(JudgementTargets.JudgementTarget target)
         {
-            if (string.IsNullOrWhiteSpace(locationName))
-                return null;
+            if (target == null)
+                return false;
 
-            return Items.OfType<VariableItem>().FirstOrDefault(item => item.Name == locationName);
+            return JudgementTargets.Remove(target);
         }
 
         /// <summary>
-        /// 重複チェック付きで場所を追加
+        /// すべての探索場所を取得
         /// </summary>
-        /// <param name="locationName">場所名</param>
-        /// <param name="gameSettings">判定レベル初期化用</param>
-        /// <returns>作成または既存のVariableItem</returns>
-        public VariableItem AddOrGetLocation(string? locationName, GameSettings? gameSettings)
+        /// <returns>判定対象のリスト</returns>
+        public List<JudgementTargets.JudgementTarget> GetAllLocations()
         {
-            var existingItem = GetLocation(locationName);
-            if (existingItem != null)
-                return existingItem;
-
-            return AddLocation(locationName, gameSettings);
+            return JudgementTargets.OfType<JudgementTargets.JudgementTarget>().ToList();
         }
     }
 }

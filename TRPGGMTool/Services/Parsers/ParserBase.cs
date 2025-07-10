@@ -131,12 +131,12 @@ namespace TRPGGMTool.Services.Parsers
         /// 判定結果行の解析
         /// </summary>
         /// <param name="line">解析対象行</param>
-        /// <param name="judgmentLevel">判定レベル名（ユーザー入力そのまま）</param>
+        /// <param name="JudgementLevel">判定レベル名（ユーザー入力そのまま）</param>
         /// <param name="text">判定結果テキスト</param>
         /// <returns>解析成功の場合true</returns>
-        protected bool TryParseJudgmentResult(string line, out string? judgmentLevel, out string? text)
+        protected bool TryParseJudgementResult(string line, out string? JudgementLevel, out string? text)
         {
-            judgmentLevel = null;
+            JudgementLevel = null;
             text = null;
 
             if (string.IsNullOrWhiteSpace(line))
@@ -144,14 +144,14 @@ namespace TRPGGMTool.Services.Parsers
 
             try
             {
-                var regex = new Regex(_formatConfig.Judgments.JudgmentResult);
+                var regex = new Regex(_formatConfig.Judgements.JudgementResult);
                 var match = regex.Match(line);
 
                 if (match.Success && match.Groups.Count >= 3)
                 {
-                    judgmentLevel = match.Groups[1].Value.Trim();
+                    JudgementLevel = match.Groups[1].Value.Trim();
                     text = match.Groups[2].Value.Trim();
-                    return !string.IsNullOrEmpty(judgmentLevel);
+                    return !string.IsNullOrEmpty(JudgementLevel);
                 }
             }
             catch (System.ArgumentException)

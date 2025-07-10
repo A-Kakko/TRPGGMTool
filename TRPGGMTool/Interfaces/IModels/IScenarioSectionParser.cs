@@ -1,6 +1,6 @@
 ﻿using TRPGGMTool.Models.Parsing;
 
-namespace TRPGGMTool.Interfaces.Model
+namespace TRPGGMTool.Interfaces.IModels
 {
     /// <summary>
     /// シナリオの各セクションパーサーの契約

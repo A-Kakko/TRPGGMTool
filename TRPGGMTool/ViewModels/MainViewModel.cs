@@ -5,9 +5,9 @@ using System.Windows.Input;
 using TRPGGMTool.Commands;
 using TRPGGMTool.Interfaces;
 using TRPGGMTool.Interfaces.IServices;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
 
 namespace TRPGGMTool.ViewModels
@@ -188,7 +188,7 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// 判定レベル数
         /// </summary>
-        public int JudgmentLevelCount => CurrentScenario.GameSettings.GetJudgmentLevelCount();
+        public int JudgementLevelCount => CurrentScenario.GameSettings.GetJudgementLevelCount();
 
         #endregion
 
@@ -263,7 +263,7 @@ namespace TRPGGMTool.ViewModels
             OnPropertyChanged(nameof(Author));
             OnPropertyChanged(nameof(Description));
             OnPropertyChanged(nameof(PlayerCount));
-            OnPropertyChanged(nameof(JudgmentLevelCount));
+            OnPropertyChanged(nameof(JudgementLevelCount));
             OnPropertyChanged(nameof(WindowTitle));
 
             // 新しいViewModel群を初期化
@@ -284,7 +284,7 @@ namespace TRPGGMTool.ViewModels
             // ViewModeAwareコンポーネントとして登録
             _viewModeAwareComponents.Clear();
             _viewModeAwareComponents.Add(SceneNavigation);
-            _viewModeAwareComponents.Add(SceneContent.JudgmentControl);
+            _viewModeAwareComponents.Add(SceneContent.JudgementControl);
             _viewModeAwareComponents.Add(SceneContent.ItemSelector); // 追加
             _viewModeAwareComponents.Add(SceneContent.ContentDisplay);
 

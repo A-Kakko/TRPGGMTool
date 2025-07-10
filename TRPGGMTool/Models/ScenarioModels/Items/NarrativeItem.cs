@@ -1,4 +1,4 @@
-﻿using TRPGGMTool.Interfaces.Model;
+﻿using TRPGGMTool.Interfaces.IModels;
 
 namespace TRPGGMTool.Models.Items
 {
@@ -42,7 +42,7 @@ namespace TRPGGMTool.Models.Items
         /// <summary>
         /// 表示用テキストを取得（判定インデックスは無視）
         /// </summary>
-        public string GetDisplayText(int judgmentIndex = 0)
+        public string GetDisplayText(int JudgementIndex = 0)
         {
             return Content;
         }

@@ -1,4 +1,4 @@
-﻿namespace TRPGGMTool.Interfaces.Model
+﻿namespace TRPGGMTool.Interfaces.IModels
 {
     /// <summary>
     /// ファイル入出力の共通操作を提供

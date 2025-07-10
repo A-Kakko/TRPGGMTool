@@ -25,7 +25,7 @@ namespace TRPGGMTool.Models.Configuration
         /// <summary>
         /// 判定レベルのパターン
         /// </summary>
-        public JudgmentPatterns Judgments { get; set; } = new JudgmentPatterns();
+        public JudgementPatterns Judgements { get; set; } = new JudgementPatterns();
     }
 
     /// <summary>
@@ -76,10 +76,10 @@ namespace TRPGGMTool.Models.Configuration
         /// <summary>
         /// 判定レベルサブセクションのパターン
         /// </summary>
-        public List<string> JudgmentSubHeaders { get; set; } = new List<string>
+        public List<string> JudgementSubHeaders { get; set; } = new List<string>
         {
             @"^###\s*判定レベル\s*$",
-            @"^###\s*Judgment\s+Levels?\s*$",
+            @"^###\s*Judgement\s+Levels?\s*$",
             @"^###\s*ダイス判定\s*$"
         };
     }
@@ -131,12 +131,12 @@ namespace TRPGGMTool.Models.Configuration
     /// <summary>
     /// 判定レベルのパターン定義
     /// </summary>
-    public class JudgmentPatterns
+    public class JudgementPatterns
     {
         /// <summary>
         /// 判定結果パターン
         /// </summary>
-        public string JudgmentResult { get; set; } = @"^-\s*([^：:]+)[：:]\s*(.+)$";
+        public string JudgementResult { get; set; } = @"^-\s*([^：:]+)[：:]\s*(.+)$";
 
     }
 

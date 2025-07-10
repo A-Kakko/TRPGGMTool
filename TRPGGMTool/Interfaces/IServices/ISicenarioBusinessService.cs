@@ -1,4 +1,4 @@
-﻿using TRPGGMTool.Models.ScenarioModels;
+﻿using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Validation;
 
 namespace TRPGGMTool.Interfaces.IServices

@@ -1,5 +1,5 @@
 ﻿using TRPGGMTool.Models.Common;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 
 namespace TRPGGMTool.Interfaces.IServices
 {

@@ -1,6 +1,6 @@
 ﻿using TRPGGMTool.Models.Common;
 
-namespace TRPGGMTool.Interfaces.Model
+namespace TRPGGMTool.Interfaces.IModels
 {
     /// <summary>
     /// 表示モード変更を受け取ることができるオブジェクトの契約

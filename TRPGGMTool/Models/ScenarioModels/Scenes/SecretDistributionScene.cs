@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using TRPGGMTool.Interfaces.Model;
-using TRPGGMTool.Models.Items;
+using TRPGGMTool.Interfaces.IModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Settings;
 
 namespace TRPGGMTool.Models.Scenes
@@ -9,8 +9,9 @@ namespace TRPGGMTool.Models.Scenes
     /// <summary>
     /// 秘匿配布シーン
     /// プレイヤー個別の秘匿情報を判定結果に応じて管理
+    /// プレイヤー設定から自動的に判定対象を生成
     /// </summary>
-    public class SecretDistributionScene : Scene, IPlayerProvider
+    public class SecretDistributionScene : Scene
     {
         /// <summary>
         /// シーンタイプ
@@ -18,9 +19,9 @@ namespace TRPGGMTool.Models.Scenes
         public override SceneType Type => SceneType.SecretDistribution;
 
         /// <summary>
-        /// プレイヤー名とVariableItemの対応関係
+        /// プレイヤー名と判定対象の対応関係
         /// </summary>
-        public Dictionary<string, VariableItem> PlayerItems { get; private set; }
+        public Dictionary<string, JudgementTarget> PlayerTargets { get; private set; }
 
         /// <summary>
         /// コンストラクタ
@@ -28,30 +29,22 @@ namespace TRPGGMTool.Models.Scenes
         public SecretDistributionScene()
         {
             Name = "秘匿配布シーン";
-            PlayerItems = new Dictionary<string, VariableItem>();
+            PlayerTargets = new Dictionary<string, JudgementTarget>();
         }
 
         /// <summary>
-        /// 利用可能なプレイヤー名一覧を取得
+        /// GameSettingsからプレイヤー情報を使って判定対象を自動生成
         /// </summary>
-        public List<string> GetAvailablePlayerNames()
-        {
-            return PlayerItems.Keys.ToList();
-        }
-
-        /// <summary>
-        /// GameSettingsからプレイヤー情報を使って項目を初期化
-        /// </summary>
-        public void InitializePlayerItems(GameSettings gameSettings)
+        public void InitializeFromGameSettings(GameSettings gameSettings)
         {
             if (gameSettings?.PlayerSettings == null)
                 throw new ArgumentNullException(nameof(gameSettings), "GameSettingsが無効です");
 
             // 既存の項目をクリア
-            Items.Clear();
-            PlayerItems.Clear();
+            JudgementTargets.Clear();
+            PlayerTargets.Clear();
 
-            // このシナリオで使用するプレイヤー分のVariableItemを作成
+            // このシナリオで使用するプレイヤー分のJudgementTargetを作成
             var scenarioPlayerNames = gameSettings.GetScenarioPlayerNames();
 
             foreach (var playerName in scenarioPlayerNames)
@@ -59,49 +52,75 @@ namespace TRPGGMTool.Models.Scenes
                 if (string.IsNullOrWhiteSpace(playerName))
                     continue;
 
-                var item = new VariableItem
-                {
-                    Name = playerName
-                };
+                var target = new JudgementTarget();
+                target.InitializeJudgementTexts(gameSettings.JudgmentLevelSettings.LevelCount);
 
-                item.InitializeJudgmentTexts(gameSettings.JudgmentLevelSettings.LevelCount);
+                // プレイヤーターゲットの辞書に追加
+                PlayerTargets[playerName] = target;
 
-                Items.Add(item);
-                PlayerItems[playerName] = item;
+                // シーンの判定対象リストにも追加
+                JudgementTargets.Add(target);
             }
         }
 
         /// <summary>
-        /// 指定されたプレイヤーに対応する項目を取得
+        /// 利用可能なプレイヤー名一覧を取得
         /// </summary>
-        public VariableItem? GetPlayerItem(string? playerName)
+        public List<string> GetAvailablePlayerNames()
+        {
+            return PlayerTargets.Keys.ToList();
+        }
+
+        /// <summary>
+        /// 指定されたプレイヤーに対応する判定対象を取得
+        /// </summary>
+        public JudgementTarget? GetPlayerTarget(string? playerName)
         {
             if (string.IsNullOrWhiteSpace(playerName))
                 return null;
 
-            return PlayerItems.TryGetValue(playerName, out var item) ? item : null;
+            return PlayerTargets.TryGetValue(playerName, out var target) ? target : null;
         }
 
         /// <summary>
-        /// プレイヤー用項目を手動で追加
+        /// プレイヤー名から判定対象を逆引き
         /// </summary>
-        public VariableItem AddPlayerItem(string playerName, GameSettings gameSettings)
+        public string? GetPlayerNameByTarget(JudgementTarget target)
         {
-            if (PlayerItems.ContainsKey(playerName))
-                return PlayerItems[playerName];
-
-            var item = new VariableItem
+            foreach (var kvp in PlayerTargets)
             {
-                Name = playerName
-            };
-
-            item.InitializeJudgmentTexts(gameSettings.JudgmentLevelSettings.LevelCount);
-
-            Items.Add(item);
-            PlayerItems[playerName] = item;
-
-            return item;
+                if (kvp.Value == target)
+                    return kvp.Key;
+            }
+            return null;
         }
 
+        /// <summary>
+        /// すべてのプレイヤー判定対象を取得
+        /// </summary>
+        public List<JudgementTarget> GetAllPlayerTargets()
+        {
+            return PlayerTargets.Values.ToList();
+        }
+
+        /// <summary>
+        /// プレイヤー設定が変更された時の再初期化
+        /// </summary>
+        public void RefreshFromGameSettings(GameSettings gameSettings)
+        {
+            // 既存のデータを保持しつつ、プレイヤー構成のみ更新
+            var existingData = new Dictionary<string, JudgementTarget>(PlayerTargets);
+
+            InitializeFromGameSettings(gameSettings);
+
+            // 既存データの復元（同じプレイヤー名の場合）
+            foreach (var kvp in existingData)
+            {
+                if (PlayerTargets.ContainsKey(kvp.Key))
+                {
+                    PlayerTargets[kvp.Key] = kvp.Value;
+                }
+            }
+        }
     }
 }

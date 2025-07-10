@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.DataAccess;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Validation;
 using TRPGGMTool.Services.FileIO;
 

@@ -3,7 +3,7 @@
     /// <summary>
     /// 判定レベル設定の解析結果データ
     /// </summary>
-    public class JudgmentLevelData
+    public class JudgementLevelData
     {
         /// <summary>
         /// 判定レベル名のリスト
@@ -13,7 +13,7 @@
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public JudgmentLevelData()
+        public JudgementLevelData()
         {
             LevelNames = new List<string>();
         }

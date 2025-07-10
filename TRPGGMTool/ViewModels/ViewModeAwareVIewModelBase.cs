@@ -1,4 +1,4 @@
-﻿using TRPGGMTool.Interfaces.Model;
+﻿using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;

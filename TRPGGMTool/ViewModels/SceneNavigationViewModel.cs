@@ -2,7 +2,7 @@
 using System.Windows.Input;
 using TRPGGMTool.Commands;
 using TRPGGMTool.Models.Common;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
 
 namespace TRPGGMTool.ViewModels

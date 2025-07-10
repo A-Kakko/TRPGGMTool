@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Managers;
 using TRPGGMTool.Models.Scenes;
 
@@ -255,7 +255,7 @@ namespace TRPGGMTool.Tests
         /// <summary>
         /// シナリオデータ構造の詳細検証（新データフロー対応版）
         /// </summary>
-        private (bool isValid, string error) ValidateScenarioData(TRPGGMTool.Models.ScenarioModels.Scenario scenario, StringBuilder debug)
+        private (bool isValid, string error) ValidateScenarioData(TRPGGMTool.Models.ScenarioModels.JudgementTargets.Scenario scenario, StringBuilder debug)
         {
             debug.AppendLine("=== 新データフロー検証開始 ===");
 
@@ -324,13 +324,13 @@ namespace TRPGGMTool.Tests
             }
 
             // 判定レベル設定の詳細検証
-            var judgmentSettings = scenario.GameSettings.JudgmentLevelSettings;
-            if (judgmentSettings == null)
-                return (false, "JudgmentLevelSettingsがnull");
+            var JudgementSettings = scenario.GameSettings.JudgementLevelSettings;
+            if (JudgementSettings == null)
+                return (false, "JudgementLevelSettingsがnull");
 
-            var levelNames = judgmentSettings.LevelNames;
-            var levelCount = judgmentSettings.LevelCount;
-            var defaultIndex = judgmentSettings.DefaultLevelIndex;
+            var levelNames = JudgementSettings.LevelNames;
+            var levelCount = JudgementSettings.LevelCount;
+            var defaultIndex = JudgementSettings.DefaultLevelIndex;
 
             debug.AppendLine($"\n🎲 判定レベル設定検証:");
             debug.AppendLine($"  レベル数: {levelCount}");
@@ -386,7 +386,7 @@ namespace TRPGGMTool.Tests
             for (int i = 0; i < scenario.Scenes.Count; i++)
             {
                 var scene = scenario.Scenes[i];
-                debug.AppendLine($"    [{i}] 名前: '{scene.Name}', タイプ: {scene.Type}, 項目数: {scene.Items?.Count ?? 0}");
+                debug.AppendLine($"    [{i}] 名前: '{scene.Name}', タイプ: {scene.Type}, 項目数: {scene.JudgementTarget?.Count ?? 0}");
             }
 
             debug.AppendLine("  期待値との比較:");

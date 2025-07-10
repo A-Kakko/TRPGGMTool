@@ -1,4 +1,4 @@
-﻿using TRPGGMTool.Interfaces.Model;
+﻿using TRPGGMTool.Interfaces.IModels;
 
 namespace TRPGGMTool.ViewModels
 {
@@ -13,7 +13,7 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// 対応する項目
         /// </summary>
-        public ISceneItem? Item { get; set; }
+        public IJudgementTarget? JudgementTarget { get; set; }
 
         /// <summary>
         /// 表示名

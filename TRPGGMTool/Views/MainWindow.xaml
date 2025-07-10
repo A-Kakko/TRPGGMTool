@@ -106,7 +106,7 @@
                         <!-- 判定レベル設定 -->
                         <GroupBox Grid.Column="1" Header="判定レベル" Margin="5">
                             <StackPanel>
-                                <TextBlock Text="{Binding JudgmentLevelCount, StringFormat='判定レベル数: {0}'}" Margin="5"/>
+                                <TextBlock Text="{Binding JudgementLevelCount, StringFormat='判定レベル数: {0}'}" Margin="5"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>
@@ -161,14 +161,14 @@
                             <!-- 左側: 判定ボタン領域 -->
                             <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,10,0">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <StackPanel DataContext="{Binding JudgmentControl}" Margin="5">
+                                    <StackPanel DataContext="{Binding JudgementControl}" Margin="5">
                                         <TextBlock Text="判定レベル" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center"/>
 
-                                        <ItemsControl ItemsSource="{Binding JudgmentLevels}">
+                                        <ItemsControl ItemsSource="{Binding JudgementLevels}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Button Content="{Binding Name}"
-                                                           Command="{Binding DataContext.SelectJudgmentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                           Command="{Binding DataContext.SelectJudgementCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                            CommandParameter="{Binding Index}"
                                                            IsEnabled="{Binding IsEnabled}"
                                                            Margin="0,2"

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Configuration;
-using TRPGGMTool.Models.Items;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
 
 namespace TRPGGMTool.Services.Parsers
@@ -260,15 +260,15 @@ namespace TRPGGMTool.Services.Parsers
         /// <summary>
         /// シーンタイプに応じて項目を作成
         /// </summary>
-        private ISceneItem CreateItemBySceneType(Scene scene, string itemName)
+        private IJudgementTarget CreateItemBySceneType(Scene scene, string itemName)
         {
             switch (scene.Type)
             {
                 case SceneType.Exploration:
-                    return new VariableItem { Name = itemName };
+                    return new JudgementTarget { Name = itemName };
 
                 case SceneType.SecretDistribution:
-                    return new VariableItem { Name = itemName };
+                    return new JudgementTarget { Name = itemName };
 
                 case SceneType.Narrative:
                     return new NarrativeItem { Name = itemName };
@@ -281,7 +281,7 @@ namespace TRPGGMTool.Services.Parsers
         /// <summary>
         /// 項目の詳細を解析
         /// </summary>
-        private ParseSectionResult ParseItemDetails(string[] lines, int startIndex, ISceneItem item, Scene scene)
+        private ParseSectionResult ParseItemDetails(string[] lines, int startIndex, IJudgementTarget item, Scene scene)
         {
             int i = startIndex;
 
@@ -309,13 +309,13 @@ namespace TRPGGMTool.Services.Parsers
                 }
 
                 // 判定テキストを解析（- 判定レベル: テキスト）
-                if (TryParseJudgmentResult(line, out var judgmentLevel, out var text))
+                if (TryParseJudgementResult(line, out var JudgementLevel, out var text))
                 {
-                    if (item is IJudgmentCapable judgmentItem)
+                    if (item is IJudgementCapable JudgementItem)
                     {
                         // 注意：ここでGameSettingsが必要になるが、現在のパーサー設計では取得できない
                         // 一時的にインデックスベースで処理（後でValidator側で正しく設定）
-                        AddJudgmentText(judgmentItem, judgmentLevel, text);
+                        AddJudgementText(JudgementItem, JudgementLevel, text);
                     }
                     i++;
                     continue;
@@ -339,33 +339,33 @@ namespace TRPGGMTool.Services.Parsers
         /// <summary>
         /// 判定テキストを追加（一時的な実装）
         /// </summary>
-        private void AddJudgmentText(IJudgmentCapable item, string judgmentLevel, string text)
+        private void AddJudgementText(IJudgementCapable item, string JudgementLevel, string text)
         {
             // 判定レベル名をそのまま保持する一時的な方法
             // 実際の判定レベル設定は後でValidatorで行う
-            if (item.JudgmentTexts.Count == 0)
+            if (item.Contents.Count == 0)
             {
                 // 最初のテキストの場合、とりあえず4つのスロットを用意
                 for (int i = 0; i < 4; i++)
                 {
-                    item.JudgmentTexts.Add("");
+                    item.Contents.Add("");
                 }
             }
 
             // 簡易的な判定レベルマッピング（後で改善）
-            var index = GetSimpleJudgmentIndex(judgmentLevel);
-            if (index >= 0 && index < item.JudgmentTexts.Count)
+            var index = GetSimpleJudgementIndex(JudgementLevel);
+            if (index >= 0 && index < item.Contents.Count)
             {
-                item.JudgmentTexts[index] = text;
+                item.Contents[index] = text;
             }
         }
 
         /// <summary>
         /// 簡易的な判定レベルインデックス取得（一時的な実装）
         /// </summary>
-        private int GetSimpleJudgmentIndex(string judgmentLevel)
+        private int GetSimpleJudgementIndex(string JudgementLevel)
         {
-            var normalized = judgmentLevel.ToLower().Trim();
+            var normalized = JudgementLevel.ToLower().Trim();
 
             if (normalized.Contains("大成功") || normalized.Contains("critical"))
                 return 0;
@@ -382,16 +382,16 @@ namespace TRPGGMTool.Services.Parsers
         /// <summary>
         /// シーンに項目を追加
         /// </summary>
-        private void AddItemToScene(Scene scene, ISceneItem item, string itemName)
+        private void AddItemToScene(Scene scene, IJudgementTarget item, string itemName)
         {
-            if (scene is SecretDistributionScene secretScene && item is VariableItem variableItem)
+            if (scene is SecretDistributionScene secretScene && item is JudgementTarget variableItem)
             {
                 // 秘匿シーンの場合はプレイヤー項目として追加
                 secretScene.PlayerItems[itemName] = variableItem;
             }
 
             // 通常の項目リストにも追加
-            scene.Items.Add(item);
+            scene.JudgementTarget.Add(item);
         }
     }
 }

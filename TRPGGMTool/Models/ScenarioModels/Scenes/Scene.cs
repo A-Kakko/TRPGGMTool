@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 
 namespace TRPGGMTool.Models.Scenes
 {
@@ -32,7 +32,7 @@ namespace TRPGGMTool.Models.Scenes
         /// <summary>
         /// シーン内の項目リスト
         /// </summary>
-        public List<ISceneItem> Items { get; set; }
+        public List<IJudgementTarget> JudgementTarget { get; set; }
 
         /// <summary>
         /// コンストラクタ
@@ -42,7 +42,7 @@ namespace TRPGGMTool.Models.Scenes
             Id = System.Guid.NewGuid().ToString();
             Name = "";
             Memo = "";
-            Items = new List<ISceneItem>();
+            JudgementTarget = new List<IJudgementTarget>();
         }
     }
 }

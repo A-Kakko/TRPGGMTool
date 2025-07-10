@@ -13,7 +13,7 @@
         /// <summary>
         /// 判定レベル設定データ
         /// </summary>
-        public JudgmentLevelData JudgmentData { get; set; }
+        public JudgementLevelData JudgementData { get; set; }
 
         /// <summary>
         /// コンストラクタ
@@ -21,7 +21,7 @@
         public GameSettingsData()
         {
             PlayerData = new PlayerSettingsData();
-            JudgmentData = new JudgmentLevelData();
+            JudgementData = new JudgementLevelData();
         }
     }
 }

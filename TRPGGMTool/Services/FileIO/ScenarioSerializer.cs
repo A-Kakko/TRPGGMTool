@@ -1,6 +1,6 @@
 ﻿using System.Text;
-using TRPGGMTool.Interfaces.Model;
-using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Interfaces.IModels;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
 
 namespace TRPGGMTool.Services.FileIO
@@ -56,7 +56,7 @@ namespace TRPGGMTool.Services.FileIO
             markdown.AppendLine();
 
             markdown.AppendLine("### 判定レベル");
-            var levelNames = scenario.GameSettings.JudgmentLevelSettings.LevelNames;
+            var levelNames = scenario.GameSettings.JudgementLevelSettings.LevelNames;
             for (int i = 0; i < levelNames.Count; i++)
             {
                 markdown.AppendLine($"{i + 1}. {levelNames[i]}");
@@ -84,20 +84,20 @@ namespace TRPGGMTool.Services.FileIO
                     markdown.AppendLine($"メモ: {scene.Memo}");
                 markdown.AppendLine();
 
-                foreach (var item in scene.Items)
+                foreach (var item in scene.JudgementTarget)
                 {
                     markdown.AppendLine($"#### {item.Name}");
                     if (!string.IsNullOrEmpty(item.Memo))
                         markdown.AppendLine($"メモ: {item.Memo}");
 
-                    if (item is IJudgmentCapable judgmentItem)
+                    if (item is IJudgementCapable JudgementItem)
                     {
-                        for (int i = 0; i < judgmentItem.JudgmentTexts.Count; i++)
+                        for (int i = 0; i < JudgementItem.Contents.Count; i++)
                         {
-                            if (i < scenario.GameSettings.JudgmentLevelSettings.LevelNames.Count)
+                            if (i < scenario.GameSettings.JudgementLevelSettings.LevelNames.Count)
                             {
-                                var levelName = scenario.GameSettings.JudgmentLevelSettings.LevelNames[i];
-                                var text = judgmentItem.JudgmentTexts[i];
+                                var levelName = scenario.GameSettings.JudgementLevelSettings.LevelNames[i];
+                                var text = JudgementItem.Contents[i];
                                 if (!string.IsNullOrEmpty(text))
                                     markdown.AppendLine($"- {levelName}: {text}");
                             }

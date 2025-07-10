@@ -8,7 +8,7 @@ namespace TRPGGMTool.Models.Settings
     /// 判定レベルの設定を管理するクラス
     /// ユーザーがカスタマイズ可能な判定レベル（大成功/成功/失敗/大失敗等）を管理
     /// </summary>
-    public class JudgmentLevelSettings
+    public class JudgementLevelSettings
     {
         /// <summary>
         /// 判定レベル名のリスト（順序重要）
@@ -28,7 +28,7 @@ namespace TRPGGMTool.Models.Settings
         /// <summary>
         /// コンストラクタ - デフォルト値で初期化
         /// </summary>
-        public JudgmentLevelSettings()
+        public JudgementLevelSettings()
         {
             LevelNames = new List<string> { "大成功", "成功", "失敗", "大失敗" };
             DefaultLevelIndex = 0; // 「大成功」をデフォルトに
@@ -38,7 +38,7 @@ namespace TRPGGMTool.Models.Settings
         /// パース結果から判定レベル設定を初期化
         /// </summary>
         /// <param name="data">判定レベル設定の解析結果</param>
-        public JudgmentLevelSettings(JudgmentLevelData data)
+        public JudgementLevelSettings(JudgementLevelData data)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));

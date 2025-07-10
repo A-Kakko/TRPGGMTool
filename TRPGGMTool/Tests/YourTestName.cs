@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 
 namespace TRPGGMTool.Tests
 {

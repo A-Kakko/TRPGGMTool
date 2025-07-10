@@ -1,6 +1,6 @@
 ﻿using System.Windows.Input;
 using TRPGGMTool.Commands;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Scenes;
 
@@ -12,8 +12,8 @@ namespace TRPGGMTool.ViewModels
     public class ContentDisplayViewModel : ViewModeAwareViewModelBase
     {
         private Scene? _currentScene;
-        private ISceneItem? _currentItem;
-        private int _currentJudgmentIndex;
+        private IJudgementTarget? _currentItem;
+        private int _currentJudgementIndex;
         private string _displayText = "";
         private string _itemName = "";
         private bool _hasContent;
@@ -108,7 +108,7 @@ namespace TRPGGMTool.ViewModels
         /// 現在の項目を設定
         /// </summary>
         /// <param name="item">現在の項目</param>
-        public void SetCurrentItem(ISceneItem? item)
+        public void SetCurrentItem(IJudgeementTarget? item)
         {
             _currentItem = item;
             UpdateDisplay();
@@ -117,10 +117,10 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// 現在の判定レベルを設定
         /// </summary>
-        /// <param name="judgmentIndex">判定レベルのインデックス</param>
-        public void SetCurrentJudgment(int judgmentIndex)
+        /// <param name="JudgementIndex">判定レベルのインデックス</param>
+        public void SetCurrentJudgement(int JudgementIndex)
         {
-            _currentJudgmentIndex = judgmentIndex;
+            _currentJudgementIndex = JudgementIndex;
             UpdateDisplay();
         }
 
@@ -129,14 +129,6 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         private void UpdateDisplay()
         {
-            if (_currentItem == null)
-            {
-                ClearDisplay();
-                return;
-            }
-
-            // 項目名を設定
-            ItemName = GetDisplayItemName();
 
             // 表示テキストを取得
             DisplayText = GetDisplayText();
@@ -159,29 +151,7 @@ namespace TRPGGMTool.ViewModels
             OnPropertyChanged(nameof(CanCopy));
         }
 
-        /// <summary>
-        /// 表示用の項目名を取得
-        /// </summary>
-        private string GetDisplayItemName()
-        {
-            if (_currentItem == null) return "";
 
-            // 秘匿配布シーンの場合はプレイヤー名を表示
-            if (_currentScene is SecretDistributionScene secretScene)
-            {
-                // PlayerItemsからプレイヤー名を逆引き
-                foreach (var kvp in secretScene.PlayerItems)
-                {
-                    if (kvp.Value == _currentItem)
-                    {
-                        return kvp.Key;
-                    }
-                }
-            }
-
-            // その他の場合は項目名を表示
-            return _currentItem.Name;
-        }
 
         /// <summary>
         /// 表示用テキストを取得
@@ -191,10 +161,10 @@ namespace TRPGGMTool.ViewModels
             if (_currentItem == null) return "";
 
             // 判定機能を持つ項目の場合
-            if (_currentItem is IJudgmentCapable judgmentItem)
+            if (_currentItem is IJudgementCapable JudgementItem)
             {
-                return judgmentItem.JudgmentTexts.Count > _currentJudgmentIndex
-                    ? judgmentItem.JudgmentTexts[_currentJudgmentIndex] ?? ""
+                return JudgementItem.Contents.Count > _currentJudgementIndex
+                    ? JudgementItem.Contents[_currentJudgementIndex] ?? ""
                     : "";
             }
 

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using TRPGGMTool.Models.Settings;
-using TRPGGMTool.Models.Items;
+using TRPGGMTool.Models.ScenarioModels.JudgementTargets;
 
-namespace TRPGGMTool.Interfaces.Model
+namespace TRPGGMTool.Interfaces.IModels
 {
     /// <summary>
     /// プレイヤー情報提供機能の契約
@@ -27,6 +27,6 @@ namespace TRPGGMTool.Interfaces.Model
         /// </summary>
         /// <param name="playerName">プレイヤー名</param>
         /// <returns>対応するVariableItem、存在しない場合はnull</returns>
-        VariableItem GetPlayerItem(string playerName);
+        JudgementTarget GetPlayerItem(string playerName);
     }
 }

@@ -15,7 +15,7 @@ namespace TRPGGMTool.Models.Settings
         /// <summary>
         /// 判定レベル設定
         /// </summary>
-        public JudgmentLevelSettings JudgmentLevelSettings { get; set; }
+        public JudgementLevelSettings JudgementLevelSettings { get; set; }
 
         /// <summary>
         /// コンストラクタ
@@ -23,7 +23,7 @@ namespace TRPGGMTool.Models.Settings
         public GameSettings()
         {
             PlayerSettings = new PlayerSettings();
-            JudgmentLevelSettings = new JudgmentLevelSettings();
+            JudgementLevelSettings = new JudgementLevelSettings();
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace TRPGGMTool.Models.Settings
                 throw new ArgumentNullException(nameof(data));
 
             PlayerSettings = new PlayerSettings(data.PlayerData);
-            JudgmentLevelSettings = new JudgmentLevelSettings(data.JudgmentData);
+            JudgementLevelSettings = new JudgementLevelSettings(data.JudgementData);
         }
 
         /// <summary>
@@ -74,17 +74,17 @@ namespace TRPGGMTool.Models.Settings
         /// <summary>
         /// 判定レベル数を取得
         /// </summary>
-        public int GetJudgmentLevelCount()
+        public int GetJudgementLevelCount()
         {
-            return JudgmentLevelSettings.LevelCount;
+            return JudgementLevelSettings.LevelCount;
         }
 
         /// <summary>
         /// デフォルト判定レベルインデックスを取得
         /// </summary>
-        public int GetDefaultJudgmentIndex()
+        public int GetDefaultJudgementIndex()
         {
-            return JudgmentLevelSettings.DefaultLevelIndex;
+            return JudgementLevelSettings.DefaultLevelIndex;
         }
 
         /// <summary>

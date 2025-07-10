@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using TRPGGMTool.Commands;
-using TRPGGMTool.Interfaces.Model;
+using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Scenes;
 
@@ -13,7 +13,7 @@ namespace TRPGGMTool.ViewModels
     public class ItemSelectorViewModel : ViewModeAwareViewModelBase
     {
         private Scene? _currentScene;
-        private ISceneItem? _selectedItem;
+        private IJudgementTarget? _selectedItem;
         private int _selectedIndex = -1;
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// 選択中の項目
         /// </summary>
-        public ISceneItem? SelectedItem
+        public IJudgementTarget? SelectedItem
         {
             get => _selectedItem;
             set
@@ -59,7 +59,7 @@ namespace TRPGGMTool.ViewModels
             {
                 if (value >= 0 && value < Items.Count)
                 {
-                    SelectedItem = Items[value].Item;
+                    SelectedItem = Items[value].JudgementTarget;
                 }
                 else
                 {
@@ -103,7 +103,7 @@ namespace TRPGGMTool.ViewModels
 
         private void InitializeCommands()
         {
-            SelectItemCommand = new RelayCommand<ISceneItem>(SelectItem, () => AreItemButtonsEnabled);
+            SelectItemCommand = new RelayCommand<IJudgementTarget>(SelectItem, () => AreItemButtonsEnabled);
         }
 
         #endregion
@@ -121,18 +121,6 @@ namespace TRPGGMTool.ViewModels
             OnPropertyChanged(nameof(ItemTypeName));
         }
 
-        /// <summary>
-        /// 項目を選択
-        /// </summary>
-        /// <param name="item">選択する項目</param>
-        private void SelectItem(ISceneItem? item)
-        {
-            if (AreItemButtonsEnabled)
-            {
-                SelectedItem = item;
-                System.Diagnostics.Debug.WriteLine($"[ItemSelector] 項目選択: {item?.Name ?? "なし"}");
-            }
-        }
 
         /// <summary>
         /// 項目一覧を更新
@@ -141,7 +129,7 @@ namespace TRPGGMTool.ViewModels
         {
             Items.Clear();
 
-            if (_currentScene?.Items == null) return;
+            if (_currentScene?.JudgementTarget == null) return;
 
             // シーンタイプに応じて項目を処理
             switch (_currentScene.Type)
@@ -160,7 +148,7 @@ namespace TRPGGMTool.ViewModels
             // 最初の項目を自動選択
             if (Items.Count > 0)
             {
-                SelectedItem = Items[0].Item;
+                SelectedItem = Items[0].JudgementTarget;
             }
             else
             {
@@ -178,12 +166,11 @@ namespace TRPGGMTool.ViewModels
         {
             if (_currentScene is not ExplorationScene explorationScene) return;
 
-            foreach (var item in explorationScene.Items)
+            foreach (var judgementTarget in explorationScene.JudgementTarget)
             {
                 var buttonViewModel = new ItemButtonViewModel
                 {
-                    Item = item,
-                    DisplayName = item.Name,
+                    JudgementTarget = judgementTarget,
                     IsSelected = false,
                     IsEnabled = AreItemButtonsEnabled
                 };
@@ -202,7 +189,7 @@ namespace TRPGGMTool.ViewModels
             {
                 var buttonViewModel = new ItemButtonViewModel
                 {
-                    Item = kvp.Value,
+                    JudgementTarget = kvp.Value,
                     DisplayName = kvp.Key, // プレイヤー名
                     IsSelected = false,
                     IsEnabled = AreItemButtonsEnabled
@@ -218,12 +205,11 @@ namespace TRPGGMTool.ViewModels
         {
             if (_currentScene is not NarrativeScene narrativeScene) return;
 
-            foreach (var item in narrativeScene.Items)
+            foreach (var item in narrativeScene.JudgementTarget)
             {
                 var buttonViewModel = new ItemButtonViewModel
                 {
-                    Item = item,
-                    DisplayName = item.Name,
+                    JudgementTarget = item,
                     IsSelected = false,
                     IsEnabled = AreItemButtonsEnabled
                 };
@@ -234,11 +220,11 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// 項目のインデックスを取得
         /// </summary>
-        private int GetItemIndex(ISceneItem item)
+        private int GetItemIndex(IJudgementTarget item)
         {
             for (int i = 0; i < Items.Count; i++)
             {
-                if (Items[i].Item == item)
+                if (Items[i].JudgementTarget == item)
                     return i;
             }
             return -1;
@@ -251,7 +237,7 @@ namespace TRPGGMTool.ViewModels
         {
             foreach (var item in Items)
             {
-                item.IsSelected = item.Item == _selectedItem;
+                item.IsSelected = item.JudgementTarget == _selectedItem;
             }
         }
 
@@ -297,9 +283,9 @@ namespace TRPGGMTool.ViewModels
     /// </summary>
     public class ItemChangedEventArgs : EventArgs
     {
-        public ISceneItem? NewItem { get; }
+        public IJudgementTarget? NewItem { get; }
 
-        public ItemChangedEventArgs(ISceneItem? newItem)
+        public ItemChangedEventArgs(IJudgementTarget? newItem)
         {
             NewItem = newItem;
         }
