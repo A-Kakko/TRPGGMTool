@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace TRPGGMTool.Interfaces
+namespace TRPGGMTool.Interfaces.Model
 {
     /// <summary>
     /// 判定機能の契約

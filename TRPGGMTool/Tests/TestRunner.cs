@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 
 namespace TRPGGMTool.Tests
 {

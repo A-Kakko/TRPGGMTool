@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 using TRPGGMTool.Models.Items;
 using TRPGGMTool.Models.Settings;
 

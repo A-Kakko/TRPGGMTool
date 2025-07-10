@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 using TRPGGMTool.Models.Managers;
 using TRPGGMTool.Models.Scenes;
 

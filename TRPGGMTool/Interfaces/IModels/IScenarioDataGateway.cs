@@ -1,7 +1,7 @@
 ﻿using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.ScenarioModels;
 
-namespace TRPGGMTool.Interfaces
+namespace TRPGGMTool.Interfaces.Model
 {
     /// <summary>
     /// シナリオデータの唯一の外界入出口

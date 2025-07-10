@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.Scenes;
 

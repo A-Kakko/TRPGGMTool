@@ -2,7 +2,7 @@
 using TRPGGMTool.Models.Settings;
 using TRPGGMTool.Models.Items;
 
-namespace TRPGGMTool.Interfaces
+namespace TRPGGMTool.Interfaces.Model
 {
     /// <summary>
     /// プレイヤー情報提供機能の契約

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 
 namespace TRPGGMTool.Models.Items
 {

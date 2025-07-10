@@ -1,4 +1,4 @@
-﻿using TRPGGMTool.Interfaces;
+﻿using TRPGGMTool.Interfaces.Model;
 using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.Models.Repositories

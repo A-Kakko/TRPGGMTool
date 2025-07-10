@@ -1,4 +1,4 @@
-﻿namespace TRPGGMTool.Interfaces
+﻿namespace TRPGGMTool.Interfaces.Model
 {
     /// <summary>
     /// 基本的な項目の契約

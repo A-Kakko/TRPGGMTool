@@ -1,5 +1,5 @@
 ﻿using System;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.DataAccess.ParseData;
 using TRPGGMTool.Models.Parsing;

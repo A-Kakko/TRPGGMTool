@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace TRPGGMTool.Interfaces
+namespace TRPGGMTool.Interfaces.Model
 {
     /// <summary>
     /// テストケースの契約

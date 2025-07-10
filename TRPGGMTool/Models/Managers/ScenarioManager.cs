@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.DataAccess;
 using TRPGGMTool.Models.ScenarioModels;

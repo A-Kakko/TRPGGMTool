@@ -5,7 +5,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using TRPGGMTool.Services;
 using TRPGGMTool.Tests;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 
 namespace TRPGGMTool
 {

@@ -1,6 +1,6 @@
 ﻿using TRPGGMTool.Models.ScenarioModels;
 
-namespace TRPGGMTool.Interfaces
+namespace TRPGGMTool.Interfaces.Model
 {
     /// <summary>
     /// シナリオデータの保持を管理するリポジトリの契約

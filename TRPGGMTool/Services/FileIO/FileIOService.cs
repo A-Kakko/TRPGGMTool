@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using System.Text;
-using TRPGGMTool.Interfaces;
+using TRPGGMTool.Interfaces.Model;
 
 namespace TRPGGMTool.Services.FileIO
 {
