@@ -4,8 +4,8 @@
 namespace TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets
 {
     /// <summary>
-    /// 判定あり判定対象（探索・秘匿配布用）
-    /// 判定結果に応じて異なるテキストを表示する
+    /// 判定あり判定対象（探索・秘匿配布用）+ 地の文用にも対応
+    /// 判定結果に応じて異なるテキストを表示、または固定テキストを表示
     /// </summary>
     public class JudgementTarget : IJudgementTarget, IJudgementCapable
     {
@@ -15,14 +15,19 @@ namespace TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets
         public string Id { get; set; }
 
         /// <summary>
+        /// 判定対象の名前（場所名、プレイヤー名、情報項目名など）
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
         /// 判定結果別テキストのリスト
         /// </summary>
         public List<string> JudgementTexts { get; private set; }
 
         /// <summary>
-        /// 判定レベルを持つ
+        /// 判定レベルを持つかどうか（テキストが複数ある場合true）
         /// </summary>
-        public bool HasJudgementLevels => true;
+        public bool HasJudgementLevels => JudgementTexts.Count > 1;
 
         /// <summary>
         /// 判定レベル数を取得
@@ -35,16 +40,17 @@ namespace TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets
         public JudgementTarget()
         {
             Id = System.Guid.NewGuid().ToString();
+            Name = "";
             JudgementTexts = new List<string>();
         }
 
         /// <summary>
         /// 表示用テキストを取得
         /// </summary>
-        public string GetDisplayText(int JudgementIndex = 0)
+        public string GetDisplayText(int judgementIndex = 0)
         {
-            if (JudgementIndex >= 0 && JudgementIndex < JudgementTexts.Count)
-                return JudgementTexts[JudgementIndex];
+            if (judgementIndex >= 0 && judgementIndex < JudgementTexts.Count)
+                return JudgementTexts[judgementIndex];
             return "";
         }
 

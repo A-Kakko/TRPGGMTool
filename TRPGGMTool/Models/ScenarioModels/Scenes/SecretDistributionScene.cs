@@ -4,13 +4,11 @@ using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Settings;
 
-
 namespace TRPGGMTool.Models.Scenes
 {
     /// <summary>
-    /// 秘匿配布シーン
+    /// 秘匿配布シーン（CRUD機能付き）
     /// プレイヤー個別の秘匿情報を判定結果に応じて管理
-    /// プレイヤー設定から自動的に判定対象を生成
     /// </summary>
     public class SecretDistributionScene : Scene
     {
@@ -33,6 +31,8 @@ namespace TRPGGMTool.Models.Scenes
             PlayerTargets = new Dictionary<string, JudgementTarget>();
         }
 
+        #region Create（作成）
+
         /// <summary>
         /// GameSettingsからプレイヤー情報を使って判定対象を自動生成
         /// </summary>
@@ -42,7 +42,7 @@ namespace TRPGGMTool.Models.Scenes
                 throw new ArgumentNullException(nameof(gameSettings), "GameSettingsが無効です");
 
             // 既存の項目をクリア
-            JudgementTarget.Clear();  // ← これが正しい（コレクションのClear）
+            JudgementTarget.Clear();
             PlayerTargets.Clear();
 
             // このシナリオで使用するプレイヤー分のJudgementTargetを作成
@@ -54,23 +54,35 @@ namespace TRPGGMTool.Models.Scenes
                     continue;
 
                 var target = new JudgementTarget();
+                target.Name = playerName;
                 target.InitializeJudgementTexts(gameSettings.JudgementLevelSettings.LevelCount);
 
-                // プレイヤーターゲットの辞書に追加
                 PlayerTargets[playerName] = target;
-
-                // シーンの判定対象リストにも追加
-                JudgementTarget.Add(target);  // ← これが正しい（コレクションのAdd）
+                JudgementTarget.Add(target);
             }
         }
 
         /// <summary>
-        /// 利用可能なプレイヤー名一覧を取得
+        /// 新しいプレイヤー項目を手動追加
         /// </summary>
-        public List<string> GetAvailablePlayerNames()
+        public JudgementTarget AddPlayerTarget(string playerName, GameSettings gameSettings)
         {
-            return PlayerTargets.Keys.ToList();
+            if (string.IsNullOrWhiteSpace(playerName) || PlayerTargets.ContainsKey(playerName))
+                return null;
+
+            var target = new JudgementTarget();
+            target.Name = playerName;
+            target.InitializeJudgementTexts(gameSettings.JudgementLevelSettings.LevelCount);
+
+            PlayerTargets[playerName] = target;
+            JudgementTarget.Add(target);
+
+            return target;
         }
+
+        #endregion
+
+        #region Read（読み取り）
 
         /// <summary>
         /// 指定されたプレイヤーに対応する判定対象を取得
@@ -97,6 +109,14 @@ namespace TRPGGMTool.Models.Scenes
         }
 
         /// <summary>
+        /// 利用可能なプレイヤー名一覧を取得
+        /// </summary>
+        public List<string> GetAvailablePlayerNames()
+        {
+            return PlayerTargets.Keys.ToList();
+        }
+
+        /// <summary>
         /// すべてのプレイヤー判定対象を取得
         /// </summary>
         public List<JudgementTarget> GetAllPlayerTargets()
@@ -104,8 +124,61 @@ namespace TRPGGMTool.Models.Scenes
             return PlayerTargets.Values.ToList();
         }
 
+        #endregion
+
+        #region Update（更新）
+
         /// <summary>
-        /// プレイヤー設定が変更された時の再初期化
+        /// プレイヤー名を変更（キーも変更）
+        /// </summary>
+        public bool UpdatePlayerName(string currentName, string newName)
+        {
+            if (string.IsNullOrWhiteSpace(currentName) || string.IsNullOrWhiteSpace(newName) ||
+                !PlayerTargets.ContainsKey(currentName) || PlayerTargets.ContainsKey(newName))
+                return false;
+
+            var target = PlayerTargets[currentName];
+            target.Name = newName;
+
+            // Dictionaryのキーを更新
+            PlayerTargets.Remove(currentName);
+            PlayerTargets[newName] = target;
+
+            return true;
+        }
+
+        /// <summary>
+        /// 指定されたプレイヤーの指定判定レベルのテキストを更新
+        /// </summary>
+        public bool UpdatePlayerText(string playerName, int judgementIndex, string newText)
+        {
+            var target = GetPlayerTarget(playerName);
+            if (target == null || judgementIndex < 0 || judgementIndex >= target.GetJudgementLevelCount())
+                return false;
+
+            target.SetJudgementText(judgementIndex, newText);
+            return true;
+        }
+
+        /// <summary>
+        /// プレイヤーのすべての判定テキストを一括更新
+        /// </summary>
+        public bool UpdatePlayerTexts(string playerName, List<string> newTexts)
+        {
+            var target = GetPlayerTarget(playerName);
+            if (target == null || newTexts == null)
+                return false;
+
+            var maxIndex = Math.Min(newTexts.Count, target.GetJudgementLevelCount());
+            for (int i = 0; i < maxIndex; i++)
+            {
+                target.SetJudgementText(i, newTexts[i]);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// プレイヤー設定が変更された時の再初期化（既存データ保持版）
         /// </summary>
         public void RefreshFromGameSettings(GameSettings gameSettings)
         {
@@ -123,5 +196,52 @@ namespace TRPGGMTool.Models.Scenes
                 }
             }
         }
+
+        #endregion
+
+        #region Delete（削除）
+
+        /// <summary>
+        /// 指定されたプレイヤー項目を削除
+        /// </summary>
+        public bool RemovePlayerTarget(string playerName)
+        {
+            if (string.IsNullOrWhiteSpace(playerName) || !PlayerTargets.ContainsKey(playerName))
+                return false;
+
+            var target = PlayerTargets[playerName];
+            PlayerTargets.Remove(playerName);
+            JudgementTarget.Remove(target);
+
+            return true;
+        }
+
+        /// <summary>
+        /// 空のプレイヤー項目をすべて削除（すべてのテキストが空）
+        /// </summary>
+        public int RemoveEmptyPlayerTargets()
+        {
+            var emptyPlayers = PlayerTargets
+                .Where(kvp => kvp.Value.JudgementTexts.All(text => string.IsNullOrWhiteSpace(text)))
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var playerName in emptyPlayers)
+            {
+                RemovePlayerTarget(playerName);
+            }
+            return emptyPlayers.Count;
+        }
+
+        /// <summary>
+        /// すべてのプレイヤー項目をクリア
+        /// </summary>
+        public void ClearAllPlayerTargets()
+        {
+            PlayerTargets.Clear();
+            JudgementTarget.Clear();
+        }
+
+        #endregion
     }
 }
