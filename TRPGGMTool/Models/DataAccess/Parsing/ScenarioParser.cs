@@ -10,6 +10,7 @@ using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.Settings;
 using TRPGGMTool.Services.Parsers;
+using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.Models.Parsing
 {

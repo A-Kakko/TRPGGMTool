@@ -22,7 +22,7 @@ namespace TRPGGMTool.ViewModels
         private readonly IScenarioFileService _fileService;
         private readonly IScenarioBusinessService _businessService;
         private readonly IDialogService _dialogService;
-        private Scenario? _currentScenario;
+        private TRPGGMTool.Models.ScenarioModels.Scenario? _currentScenario; // 明示的な型指定
         private ViewMode _currentViewMode = ViewMode.Edit;
         private readonly List<IViewModeAware> _viewModeAwareComponents = new();
 
@@ -36,15 +36,15 @@ namespace TRPGGMTool.ViewModels
         {
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
             _businessService = businessService ?? throw new ArgumentNullException(nameof(businessService));
+            _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
             InitializeCommands();
 
             // 初期化時に新しいシナリオを作成
             InitializeWithNewScenario();
-            _dialogService = dialogService;
         }
 
-        #region 基本プロパティ（既存機能）
+        #region 基本プロパティ
 
         /// <summary>
         /// 現在の表示モード
@@ -60,6 +60,7 @@ namespace TRPGGMTool.ViewModels
                     NotifyViewModeChanged();
                     OnPropertyChanged(nameof(IsEditMode));
                     OnPropertyChanged(nameof(IsViewMode));
+                    OnPropertyChanged(nameof(CurrentViewModeText));
                 }
             }
         }
@@ -74,11 +75,26 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         public bool IsViewMode => CurrentViewMode == ViewMode.View;
 
+        /// <summary>
+        /// 現在の表示モード（文字列表示用）
+        /// </summary>
+        public string CurrentViewModeText
+        {
+            get
+            {
+                return CurrentViewMode switch
+                {
+                    ViewMode.Edit => "編集モード",
+                    ViewMode.View => "閲覧モード",
+                    _ => "不明"
+                };
+            }
+        }
 
         /// <summary>
         /// 現在のシナリオ（nullになることはない）
         /// </summary>
-        public Scenario CurrentScenario
+        public TRPGGMTool.Models.ScenarioModels.Scenario CurrentScenario
         {
             get => _currentScenario!;
             private set
@@ -94,17 +110,17 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// シナリオが読み込まれているかどうか（常にtrue）
         /// </summary>
-        public bool IsScenarioLoaded => true;
+        public bool IsScenarioLoaded => _currentScenario != null;
 
         /// <summary>
         /// シナリオタイトル
         /// </summary>
         public string ScenarioTitle
         {
-            get => CurrentScenario.Metadata.Title;
+            get => CurrentScenario.Metadata?.Title ?? "";
             set
             {
-                if (CurrentScenario.Metadata.Title != value)
+                if (CurrentScenario.Metadata != null && CurrentScenario.Metadata.Title != value)
                 {
                     CurrentScenario.Metadata.SetTitle(value);
                     CurrentScenario.MarkAsModified();
@@ -121,10 +137,10 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         public string Author
         {
-            get => CurrentScenario.Metadata.Author ?? "";
+            get => CurrentScenario.Metadata?.Author ?? "";
             set
             {
-                if (CurrentScenario.Metadata.Author != value)
+                if (CurrentScenario.Metadata != null && CurrentScenario.Metadata.Author != value)
                 {
                     CurrentScenario.Metadata.Author = value;
                     CurrentScenario.MarkAsModified();
@@ -141,10 +157,10 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         public string Description
         {
-            get => CurrentScenario.Metadata.Description ?? "";
+            get => CurrentScenario.Metadata?.Description ?? "";
             set
             {
-                if (CurrentScenario.Metadata.Description != value)
+                if (CurrentScenario.Metadata != null && CurrentScenario.Metadata.Description != value)
                 {
                     CurrentScenario.Metadata.Description = value;
                     CurrentScenario.MarkAsModified();
@@ -164,7 +180,7 @@ namespace TRPGGMTool.ViewModels
             get
             {
                 var baseTitle = "TRPG GM Tool";
-                var scenarioTitle = CurrentScenario.Metadata.Title;
+                var scenarioTitle = CurrentScenario.Metadata?.Title ?? "新しいシナリオ";
                 var modifiedMark = HasUnsavedChanges ? " *" : "";
 
                 return $"{baseTitle} - {scenarioTitle}{modifiedMark}";
@@ -174,17 +190,17 @@ namespace TRPGGMTool.ViewModels
         /// <summary>
         /// 未保存の変更があるかどうか
         /// </summary>
-        public bool HasUnsavedChanges => CurrentScenario.HasUnsavedChanges;
+        public bool HasUnsavedChanges => CurrentScenario?.HasUnsavedChanges ?? false;
 
         /// <summary>
         /// プレイヤー数
         /// </summary>
-        public int PlayerCount => CurrentScenario.GameSettings.GetScenarioPlayerCount();
+        public int PlayerCount => CurrentScenario?.GameSettings?.GetScenarioPlayerCount() ?? 0;
 
         /// <summary>
         /// 判定レベル数
         /// </summary>
-        public int JudgementLevelCount => CurrentScenario.GameSettings.GetJudgementLevelCount();
+        public int JudgementLevelCount => CurrentScenario?.GameSettings?.GetJudgementLevelCount() ?? 0;
 
         #endregion
 
@@ -211,7 +227,6 @@ namespace TRPGGMTool.ViewModels
         public ICommand? SetEditModeCommand { get; private set; }
         public ICommand? SetViewModeCommand { get; private set; }
         public ICommand? ToggleViewModeCommand { get; private set; }
-
 
         private void InitializeCommands()
         {
@@ -254,10 +269,6 @@ namespace TRPGGMTool.ViewModels
             System.Diagnostics.Debug.WriteLine($"[MainViewModel] モードトグル: {CurrentViewMode}");
         }
 
-        #endregion
-
-        #region モード変更
-
         /// <summary>
         /// 子ViewModelにモード変更を通知
         /// </summary>
@@ -268,41 +279,8 @@ namespace TRPGGMTool.ViewModels
                 component.SetViewMode(CurrentViewMode);
             }
         }
-        /// <summary>
-        /// 現在の表示モード（文字列表示用）
-        /// </summary>
-        public string CurrentViewModeText
-        {
-            get
-            {
-                return CurrentViewMode switch
-                {
-                    ViewMode.Edit => "編集モード",
-                    ViewMode.View => "閲覧モード",
-                    _ => "不明"
-                };
-            }
-        }
 
-        /// <summary>
-        /// 現在の表示モード
-        /// </summary>
-        public ViewMode CurrentViewMode
-        {
-            get => _currentViewMode;
-            set
-            {
-                if (SetProperty(ref _currentViewMode, value))
-                {
-                    // 子ViewModelにモード変更を通知
-                    NotifyViewModeChanged();
-                    OnPropertyChanged(nameof(IsEditMode));
-                    OnPropertyChanged(nameof(IsViewMode));
-                    OnPropertyChanged(nameof(CurrentViewModeText)); // 追加
-                }
-            }
-        }
-
+        #endregion
 
         #region 初期化・シナリオ管理
 
@@ -315,8 +293,6 @@ namespace TRPGGMTool.ViewModels
             CurrentScenario = initialScenario;
             System.Diagnostics.Debug.WriteLine("初期化: 新しいシナリオを自動作成しました");
         }
-
-
 
         /// <summary>
         /// シナリオ変更時の処理
@@ -338,7 +314,6 @@ namespace TRPGGMTool.ViewModels
             InitializeSceneViewModels();
         }
 
-
         /// <summary>
         /// シーン関連ViewModelを初期化
         /// </summary>
@@ -353,7 +328,7 @@ namespace TRPGGMTool.ViewModels
             _viewModeAwareComponents.Clear();
             _viewModeAwareComponents.Add(SceneNavigation);
             _viewModeAwareComponents.Add(SceneContent.JudgementControl);
-            _viewModeAwareComponents.Add(SceneContent.ItemSelector); // 追加
+            _viewModeAwareComponents.Add(SceneContent.ItemSelector);
             _viewModeAwareComponents.Add(SceneContent.ContentDisplay);
 
             // モードを設定
@@ -363,9 +338,6 @@ namespace TRPGGMTool.ViewModels
             OnPropertyChanged(nameof(SceneNavigation));
             OnPropertyChanged(nameof(SceneContent));
         }
-        #endregion
-
-
 
         /// <summary>
         /// シーンイベントハンドラーを設定
@@ -399,7 +371,6 @@ namespace TRPGGMTool.ViewModels
         private void OnTextCopied(object? sender, TextCopiedEventArgs e)
         {
             System.Diagnostics.Debug.WriteLine($"テキストコピー完了: {e.CopiedText.Substring(0, Math.Min(50, e.CopiedText.Length))}...");
-            // 必要に応じてステータスバーに表示など
         }
 
         /// <summary>
@@ -408,7 +379,6 @@ namespace TRPGGMTool.ViewModels
         private void OnCopyError(object? sender, CopyErrorEventArgs e)
         {
             System.Diagnostics.Debug.WriteLine($"コピーエラー: {e.ErrorMessage}");
-            // 必要に応じてエラーダイアログ表示など
         }
 
         /// <summary>
@@ -431,7 +401,7 @@ namespace TRPGGMTool.ViewModels
 
         #endregion
 
-        #region ファイル操作（既存機能）
+        #region ファイル操作
 
         /// <summary>
         /// 新しいシナリオを作成
@@ -459,10 +429,10 @@ namespace TRPGGMTool.ViewModels
 
             var result = await _fileService.LoadFromFileAsync(filePath);
 
-            if (result.IsSuccess)
+            if (result.IsSuccess && result.Data != null)
             {
-                CurrentScenario = result.Data!;
-                System.Diagnostics.Debug.WriteLine($"シナリオ読み込み成功: {result.Data!.Metadata.Title}");
+                CurrentScenario = result.Data;
+                System.Diagnostics.Debug.WriteLine($"シナリオ読み込み成功: {result.Data.Metadata?.Title ?? "無題"}");
 
                 if (result.Warnings.Count > 0)
                 {
@@ -485,7 +455,7 @@ namespace TRPGGMTool.ViewModels
             var filePath = CurrentScenario.FilePath;
             if (string.IsNullOrEmpty(filePath))
             {
-                System.Diagnostics.Debug.WriteLine("保存先パスが未設定のため保存をキャンセル");
+                await SaveAsScenarioAsync();
                 return;
             }
 
@@ -497,7 +467,7 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         private async Task SaveAsScenarioAsync()
         {
-            var defaultFileName = CurrentScenario.Metadata.Title + ".scenario";
+            var defaultFileName = (CurrentScenario.Metadata?.Title ?? "新しいシナリオ") + ".scenario";
 
             var filePath = await _dialogService.ShowSaveFileDialogAsync(
                 "シナリオファイル (*.scenario)|*.scenario|Markdownファイル (*.md)|*.md",

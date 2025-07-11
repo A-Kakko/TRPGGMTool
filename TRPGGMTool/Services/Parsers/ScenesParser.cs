@@ -218,15 +218,9 @@ namespace TRPGGMTool.Services.Parsers
             {
                 var line = lines[startIndex].Trim();
 
-                // 項目名を抽出（"#### " を除去）
-                var itemName = ExtractItemName(line);
-                if (string.IsNullOrEmpty(itemName))
-                {
-                    return ParseSectionResult.CreateSuccess(null, startIndex + 1);
-                }
 
                 // シーンタイプに応じて項目を作成
-                var item = CreateItemBySceneType(scene, itemName);
+                var item = CreateItemBySceneType(scene);
                 if (item == null)
                 {
                     return ParseSectionResult.CreateSuccess(null, startIndex + 1);
@@ -236,7 +230,7 @@ namespace TRPGGMTool.Services.Parsers
                 var detailsResult = ParseItemDetails(lines, startIndex + 1, item, scene);
 
                 // シーンに項目を追加
-                AddItemToScene(scene, item, itemName);
+                AddItemToScene(scene, item);
 
                 return ParseSectionResult.CreateSuccess(item, detailsResult.NextIndex);
             }
@@ -260,21 +254,17 @@ namespace TRPGGMTool.Services.Parsers
         /// <summary>
         /// シーンタイプに応じて項目を作成
         /// </summary>
-        private IJudgementTarget CreateItemBySceneType(Scene scene, string itemName)
+        private IJudgementTarget CreateItemBySceneType(Scene scene)
         {
             switch (scene.Type)
             {
                 case SceneType.Exploration:
-                    return new JudgementTarget { Name = itemName };
-
                 case SceneType.SecretDistribution:
-                    return new JudgementTarget { Name = itemName };
+                    return new JudgementTarget();
 
                 case SceneType.Narrative:
-                    return new NarrativeItem { Name = itemName };
-
                 default:
-                    return new NarrativeItem { Name = itemName };
+                    return new NarrativeTarget();
             }
         }
 
@@ -339,24 +329,24 @@ namespace TRPGGMTool.Services.Parsers
         /// <summary>
         /// 判定テキストを追加（一時的な実装）
         /// </summary>
-        private void AddJudgementText(IJudgementCapable item, string JudgementLevel, string text)
+        private void AddJudgementText(IJudgementCapable target, string JudgementLevel, string text)
         {
             // 判定レベル名をそのまま保持する一時的な方法
             // 実際の判定レベル設定は後でValidatorで行う
-            if (item.Contents.Count == 0)
+            if (target.Contents.Count == 0)
             {
                 // 最初のテキストの場合、とりあえず4つのスロットを用意
                 for (int i = 0; i < 4; i++)
                 {
-                    item.Contents.Add("");
+                    target.Contents.Add("");
                 }
             }
 
             // 簡易的な判定レベルマッピング（後で改善）
             var index = GetSimpleJudgementIndex(JudgementLevel);
-            if (index >= 0 && index < item.Contents.Count)
+            if (index >= 0 && index < target.Contents.Count)
             {
-                item.Contents[index] = text;
+                target.Contents[index] = text;
             }
         }
 
@@ -382,16 +372,16 @@ namespace TRPGGMTool.Services.Parsers
         /// <summary>
         /// シーンに項目を追加
         /// </summary>
-        private void AddItemToScene(Scene scene, IJudgementTarget item, string itemName)
+        private void AddItemToScene(Scene scene, IJudgementTarget target)
         {
-            if (scene is SecretDistributionScene secretScene && item is JudgementTarget variableItem)
+            if (scene is SecretDistributionScene secretScene && target is JudgementTarget variableItem)
             {
                 // 秘匿シーンの場合はプレイヤー項目として追加
                 secretScene.PlayerItems[itemName] = variableItem;
             }
 
             // 通常の項目リストにも追加
-            scene.JudgementTarget.Add(item);
+            scene.JudgementTarget.Add(target);
         }
     }
 }

@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Managers;
 using TRPGGMTool.Models.Scenes;
+using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
+using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.Tests
 {
@@ -255,7 +257,7 @@ namespace TRPGGMTool.Tests
         /// <summary>
         /// シナリオデータ構造の詳細検証（新データフロー対応版）
         /// </summary>
-        private (bool isValid, string error) ValidateScenarioData(TRPGGMTool.Models.ScenarioModels.JudgementTargets.Scenario scenario, StringBuilder debug)
+        private (bool isValid, string error) ValidateScenarioData(Scenario scenario, StringBuilder debug)
         {
             debug.AppendLine("=== 新データフロー検証開始 ===");
 

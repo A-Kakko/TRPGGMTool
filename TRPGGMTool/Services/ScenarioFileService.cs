@@ -3,10 +3,8 @@ using TRPGGMTool.Interfaces.IServices;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Parsing;
-using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Services.FileIO;
 using TRPGGMTool.Models.ScenarioModels;
-
 
 namespace TRPGGMTool.Services
 {
@@ -35,7 +33,7 @@ namespace TRPGGMTool.Services
         /// <summary>
         /// ファイルからシナリオを読み込み
         /// </summary>
-        public async Task<OperationResult<Scenario>> LoadFromFileAsync(string filePath)
+        public async Task<OperationResult<TRPGGMTool.Models.ScenarioModels.Scenario>> LoadFromFileAsync(string filePath)
         {
             try
             {
@@ -45,7 +43,7 @@ namespace TRPGGMTool.Services
 
                 if (scenario == null)
                 {
-                    return OperationResult<Scenario>.Failure("シナリオの構築に失敗しました");
+                    return OperationResult<TRPGGMTool.Models.ScenarioModels.Scenario>.Failure("シナリオの構築に失敗しました");
                 }
 
                 scenario.SetFilePath(filePath);
@@ -54,19 +52,19 @@ namespace TRPGGMTool.Services
                 var warnings = CollectWarnings(parseResults);
 
                 return warnings.Count > 0
-                    ? OperationResult<Scenario>.SuccessWithWarnings(scenario, warnings)
-                    : OperationResult<Scenario>.Success(scenario);
+                    ? OperationResult<TRPGGMTool.Models.ScenarioModels.Scenario>.SuccessWithWarnings(scenario, warnings)
+                    : OperationResult<TRPGGMTool.Models.ScenarioModels.Scenario>.Success(scenario);
             }
             catch (Exception ex)
             {
-                return OperationResult<Scenario>.Failure($"ファイル読み込み中にエラーが発生しました: {ex.Message}");
+                return OperationResult<TRPGGMTool.Models.ScenarioModels.Scenario>.Failure($"ファイル読み込み中にエラーが発生しました: {ex.Message}");
             }
         }
 
         /// <summary>
         /// シナリオをファイルに保存
         /// </summary>
-        public async Task<OperationResult<string>> SaveToFileAsync(Scenario scenario, string filePath)
+        public async Task<OperationResult<string>> SaveToFileAsync(TRPGGMTool.Models.ScenarioModels.Scenario scenario, string filePath)
         {
             try
             {
@@ -110,14 +108,17 @@ namespace TRPGGMTool.Services
             }
         }
 
-        private Scenario? BuildScenarioFromParseResults(ScenarioParseResults parseResults)
+        /// <summary>
+        /// パース結果からシナリオオブジェクトを構築
+        /// </summary>
+        private TRPGGMTool.Models.ScenarioModels.Scenario? BuildScenarioFromParseResults(ScenarioParseResults parseResults)
         {
             if (HasCriticalMetadataErrors(parseResults))
                 return null;
 
-            var scenario = new Scenario();
+            var scenario = new TRPGGMTool.Models.ScenarioModels.Scenario();
 
-            if (parseResults.Metadata != null)
+            if (parseResults.Metadata is not null)
                 scenario.Metadata = parseResults.Metadata;
 
             if (!string.IsNullOrEmpty(parseResults.Title))
@@ -134,6 +135,9 @@ namespace TRPGGMTool.Services
             return scenario;
         }
 
+        /// <summary>
+        /// 致命的なメタデータエラーがあるかチェック
+        /// </summary>
         private bool HasCriticalMetadataErrors(ScenarioParseResults parseResults)
         {
             return parseResults.Errors?.Any(error =>
@@ -141,6 +145,9 @@ namespace TRPGGMTool.Services
                 error.Contains("タイトル") || error.Contains("Title")) ?? false;
         }
 
+        /// <summary>
+        /// 警告メッセージを収集
+        /// </summary>
         private List<string> CollectWarnings(ScenarioParseResults parseResults)
         {
             var warnings = new List<string>();
@@ -160,6 +167,9 @@ namespace TRPGGMTool.Services
             return warnings;
         }
 
+        /// <summary>
+        /// 致命的エラーかどうかを判定
+        /// </summary>
         private bool IsCriticalError(string error)
         {
             return error.Contains("メタデータ") || error.Contains("Metadata") ||

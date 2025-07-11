@@ -1,6 +1,6 @@
 ﻿using TRPGGMTool.Models.Common;
-using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.ScenarioModels;
+
 namespace TRPGGMTool.Interfaces.IServices
 {
     /// <summary>
@@ -13,7 +13,7 @@ namespace TRPGGMTool.Interfaces.IServices
         /// </summary>
         /// <param name="filePath">読み込み対象ファイルパス</param>
         /// <returns>読み込み結果</returns>
-        Task<OperationResult<Scenario>> LoadFromFileAsync(string filePath);
+        Task<OperationResult<TRPGGMTool.Models.ScenarioModels.Scenario>> LoadFromFileAsync(string filePath);
 
         /// <summary>
         /// シナリオをファイルに保存
@@ -21,7 +21,7 @@ namespace TRPGGMTool.Interfaces.IServices
         /// <param name="scenario">保存対象シナリオ</param>
         /// <param name="filePath">保存先ファイルパス</param>
         /// <returns>保存結果（成功時は保存先パス）</returns>
-        Task<OperationResult<string>> SaveToFileAsync(Scenario scenario, string filePath);
+        Task<OperationResult<string>> SaveToFileAsync(TRPGGMTool.Models.ScenarioModels.Scenario scenario, string filePath);
 
         /// <summary>
         /// ファイル形式の妥当性をチェック

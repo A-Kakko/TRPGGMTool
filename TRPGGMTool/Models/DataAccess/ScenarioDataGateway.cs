@@ -7,7 +7,7 @@ using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Validation;
 using TRPGGMTool.Services;
 using TRPGGMTool.Services.FileIO;
-
+using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.Models.DataAccess
 {

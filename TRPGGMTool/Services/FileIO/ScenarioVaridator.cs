@@ -1,5 +1,6 @@
 ﻿using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Validation;
+using TRPGGMTool.Models.ScenarioModels;
 
 namespace TRPGGMTool.Services.FileIO
 {
