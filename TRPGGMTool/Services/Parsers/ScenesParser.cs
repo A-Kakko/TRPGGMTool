@@ -1,24 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Configuration;
-using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
-using TRPGGMTool.Models.Parsing;
+using TRPGGMTool.Models.DataAccess.Parsing;
 using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
+using TRPGGMTool.Models.Settings;
 
 namespace TRPGGMTool.Services.Parsers
 {
     /// <summary>
-    /// 書式変更対応シーンパーサー
+    /// 書式変更対応シーンパーサー（GameSettings対応版）
     /// </summary>
     public class ScenesParser : ParserBase, IScenarioSectionParser
     {
+        private GameSettings? _gameSettings;
+
         public string SectionName => "ScenesParser";
 
         public ScenesParser(FormatConfiguration formatConfig) : base(formatConfig)
         {
+        }
+
+        /// <summary>
+        /// GameSettingsを設定（段階的パース用）
+        /// </summary>
+        public void SetGameSettings(GameSettings gameSettings)
+        {
+            _gameSettings = gameSettings;
+            Debug.WriteLine($"ScenesParserにGameSettings設定完了: 判定レベル数={gameSettings?.JudgementLevelSettings?.LevelCount ?? 0}");
         }
 
         public bool CanHandle(string line)
@@ -189,7 +202,8 @@ namespace TRPGGMTool.Services.Parsers
                 // メモ行を解析
                 if (TryParseMemo(line, out var memoContent))
                 {
-                    scene.Memo = memoContent;
+                    scene.Memo = memoContent ?? "";
+                    Debug.WriteLine($"    シーンメモ設定: '{scene.Memo}'");
                     i++;
                     continue;
                 }
@@ -197,8 +211,8 @@ namespace TRPGGMTool.Services.Parsers
                 // 項目定義を解析（#### で始まる）
                 if (line.StartsWith("####"))
                 {
-                    var itemResult = ParseSceneItem(lines, i, scene);
-                    i = itemResult.NextIndex;
+                    var targetResult = ParseSceneTarget(lines, i, scene);
+                    i = targetResult.NextIndex;
                 }
                 else
                 {
@@ -210,40 +224,40 @@ namespace TRPGGMTool.Services.Parsers
         }
 
         /// <summary>
-        /// シーン項目を解析
+        /// シーン項目を解析（Item→Target命名統一）
         /// </summary>
-        private ParseSectionResult ParseSceneItem(string[] lines, int startIndex, Scene scene)
+        private ParseSectionResult ParseSceneTarget(string[] lines, int startIndex, Scene scene)
         {
             try
             {
                 var line = lines[startIndex].Trim();
 
-
-                // シーンタイプに応じて項目を作成
-                var item = CreateItemBySceneType(scene);
-                if (item == null)
+                // 項目名を抽出（"#### " を除去）
+                var targetName = ExtractTargetName(line);
+                if (string.IsNullOrEmpty(targetName))
                 {
+                    Debug.WriteLine($"    項目名抽出失敗: '{line}'");
                     return ParseSectionResult.CreateSuccess(null, startIndex + 1);
                 }
 
+                Debug.WriteLine($"    項目名抽出: '{targetName}'");
+
                 // 項目の詳細を解析
-                var detailsResult = ParseItemDetails(lines, startIndex + 1, item, scene);
+                var detailsResult = ParseTargetDetails(lines, startIndex + 1, targetName, scene);
 
-                // シーンに項目を追加
-                AddItemToScene(scene, item);
-
-                return ParseSectionResult.CreateSuccess(item, detailsResult.NextIndex);
+                return ParseSectionResult.CreateSuccess(null, detailsResult.NextIndex);
             }
             catch (Exception ex)
             {
+                Debug.WriteLine($"    項目解析エラー: {ex.Message}");
                 return ParseSectionResult.CreateFailure($"項目解析中にエラー: {ex.Message}", startIndex + 1);
             }
         }
 
         /// <summary>
-        /// 項目名を抽出
+        /// 項目名を抽出（Item→Target命名統一）
         /// </summary>
-        private string ExtractItemName(string line)
+        private string ExtractTargetName(string line)
         {
             var regex = new Regex(_formatConfig.Items.ItemDefinition);
             var match = regex.Match(line);
@@ -252,28 +266,15 @@ namespace TRPGGMTool.Services.Parsers
         }
 
         /// <summary>
-        /// シーンタイプに応じて項目を作成
+        /// 項目の詳細を解析（Item→Target命名統一 + Memo対応）
         /// </summary>
-        private IJudgementTarget CreateItemBySceneType(Scene scene)
-        {
-            switch (scene.Type)
-            {
-                case SceneType.Exploration:
-                case SceneType.SecretDistribution:
-                    return new JudgementTarget();
-
-                case SceneType.Narrative:
-                default:
-                    return new NarrativeTarget();
-            }
-        }
-
-        /// <summary>
-        /// 項目の詳細を解析
-        /// </summary>
-        private ParseSectionResult ParseItemDetails(string[] lines, int startIndex, IJudgementTarget item, Scene scene)
+        private ParseSectionResult ParseTargetDetails(string[] lines, int startIndex, string targetName, Scene scene)
         {
             int i = startIndex;
+            var parsedTexts = new Dictionary<string, string>();
+            string targetMemo = "";
+
+            Debug.WriteLine($"      項目詳細解析開始: '{targetName}'");
 
             while (i < lines.Length)
             {
@@ -290,98 +291,176 @@ namespace TRPGGMTool.Services.Parsers
                     continue;
                 }
 
-                // メモ行を解析
+                // メモ行を解析（項目個別のメモ）
                 if (TryParseMemo(line, out var memoContent))
                 {
-                    item.Memo = memoContent;
+                    targetMemo = memoContent ?? "";
+                    Debug.WriteLine($"        項目メモ: '{targetMemo}'");
                     i++;
                     continue;
                 }
 
                 // 判定テキストを解析（- 判定レベル: テキスト）
-                if (TryParseJudgementResult(line, out var JudgementLevel, out var text))
+                if (TryParseJudgementResult(line, out var judgementLevel, out var text))
                 {
-                    if (item is IJudgementCapable JudgementItem)
-                    {
-                        // 注意：ここでGameSettingsが必要になるが、現在のパーサー設計では取得できない
-                        // 一時的にインデックスベースで処理（後でValidator側で正しく設定）
-                        AddJudgementText(JudgementItem, JudgementLevel, text);
-                    }
+                    parsedTexts[judgementLevel ?? ""] = text ?? "";
+                    Debug.WriteLine($"        判定テキスト: '{judgementLevel}' → '{text}'");
                     i++;
                     continue;
                 }
 
-                // 地の文の内容を解析（判定なし）
-                if (item is NarrativeItem narrativeItem && !line.StartsWith("-"))
+                // 地の文の内容を解析（判定なし、直接テキスト）
+                if (scene.Type == SceneType.Narrative && !line.StartsWith("-"))
                 {
-                    if (string.IsNullOrEmpty(narrativeItem.Content))
-                        narrativeItem.Content = line;
+                    // 地の文の場合は直接内容として扱う
+                    if (!parsedTexts.ContainsKey("content"))
+                        parsedTexts["content"] = line;
                     else
-                        narrativeItem.Content += "\n" + line;
+                        parsedTexts["content"] += "\n" + line;
+                    Debug.WriteLine($"        地の文内容: '{line}'");
                 }
 
                 i++;
             }
 
-            return ParseSectionResult.CreateSuccess(item, i);
+            // シーンタイプに応じて項目を作成
+            AddTargetToScene(scene, targetName, parsedTexts, targetMemo);
+
+            Debug.WriteLine($"      項目詳細解析完了: '{targetName}'");
+            return ParseSectionResult.CreateSuccess(null, i);
         }
 
         /// <summary>
-        /// 判定テキストを追加（一時的な実装）
+        /// シーンタイプに応じて項目を作成・追加（Item→Target命名統一）
         /// </summary>
-        private void AddJudgementText(IJudgementCapable target, string JudgementLevel, string text)
+        private void AddTargetToScene(Scene scene, string targetName, Dictionary<string, string> parsedTexts, string targetMemo)
         {
-            // 判定レベル名をそのまま保持する一時的な方法
-            // 実際の判定レベル設定は後でValidatorで行う
-            if (target.Contents.Count == 0)
+            Debug.WriteLine($"        項目追加: シーンタイプ={scene.Type}, 項目名='{targetName}'");
+
+            switch (scene.Type)
             {
-                // 最初のテキストの場合、とりあえず4つのスロットを用意
-                for (int i = 0; i < 4; i++)
+                case SceneType.Exploration:
+                    AddExplorationTarget(scene as ExplorationScene, targetName, parsedTexts, targetMemo);
+                    break;
+
+                case SceneType.SecretDistribution:
+                    AddSecretDistributionTarget(scene as SecretDistributionScene, targetName, parsedTexts, targetMemo);
+                    break;
+
+                case SceneType.Narrative:
+                    AddNarrativeTarget(scene as NarrativeScene, targetName, parsedTexts, targetMemo);
+                    break;
+
+                default:
+                    Debug.WriteLine($"        未対応のシーンタイプ: {scene.Type}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 地の文項目を追加（Memo対応）
+        /// </summary>
+        private void AddNarrativeTarget(NarrativeScene? narrativeScene, string targetName, Dictionary<string, string> parsedTexts, string targetMemo)
+        {
+            if (narrativeScene == null)
+            {
+                Debug.WriteLine($"        地の文シーンがnull");
+                return;
+            }
+
+            // 地の文は判定レベルなしなので、すべてのテキストを連結
+            var content = "";
+            if (parsedTexts.ContainsKey("content"))
+            {
+                content = parsedTexts["content"];
+            }
+            else
+            {
+                content = string.Join("\n", parsedTexts.Values.Where(v => !string.IsNullOrWhiteSpace(v)));
+            }
+
+            var narrativeTarget = narrativeScene.AddInformationItem(targetName, content);
+            Debug.WriteLine($"        地の文項目追加完了: '{targetName}' → '{content.Substring(0, Math.Min(50, content.Length))}...'");
+
+            // メモは現在削除されているため、targetMemoは使用しない
+        }
+
+        /// <summary>
+        /// 探索項目を追加（Memo対応）
+        /// </summary>
+        private void AddExplorationTarget(ExplorationScene? explorationScene, string targetName, Dictionary<string, string> parsedTexts, string targetMemo)
+        {
+            if (explorationScene == null || _gameSettings == null)
+            {
+                Debug.WriteLine($"        探索シーンまたはGameSettingsがnull");
+                return;
+            }
+
+            var target = explorationScene.AddLocation(_gameSettings, targetName);
+            SetJudgementTextsFromParsed(target, parsedTexts);
+            Debug.WriteLine($"        探索項目追加完了: '{targetName}'");
+
+            // メモは現在削除されているため、targetMemoは使用しない
+        }
+
+        /// <summary>
+        /// 秘匿配布項目を追加（Memo対応）
+        /// </summary>
+        private void AddSecretDistributionTarget(SecretDistributionScene? secretScene, string targetName, Dictionary<string, string> parsedTexts, string targetMemo)
+        {
+            if (secretScene == null || _gameSettings == null)
+            {
+                Debug.WriteLine($"        秘匿配布シーンまたはGameSettingsがnull");
+                return;
+            }
+
+            var target = secretScene.AddPlayerTarget(targetName, _gameSettings);
+            if (target != null)
+            {
+                SetJudgementTextsFromParsed(target, parsedTexts);
+                Debug.WriteLine($"        秘匿配布項目追加完了: '{targetName}'");
+            }
+            else
+            {
+                Debug.WriteLine($"        秘匿配布項目追加失敗: '{targetName}' (重複またはエラー)");
+            }
+
+            // メモは現在削除されているため、targetMemoは使用しない
+        }
+
+        /// <summary>
+        /// パースされたテキストを判定レベルに設定
+        /// </summary>
+        private void SetJudgementTextsFromParsed(JudgementTarget target, Dictionary<string, string> parsedTexts)
+        {
+            if (_gameSettings == null || target == null)
+            {
+                Debug.WriteLine($"          判定テキスト設定スキップ: GameSettings={_gameSettings != null}, Target={target != null}");
+                return;
+            }
+
+            var levelNames = _gameSettings.JudgementLevelSettings.LevelNames;
+            Debug.WriteLine($"          判定テキスト設定開始: レベル数={levelNames.Count}");
+
+            foreach (var kvp in parsedTexts)
+            {
+                var judgementLevel = kvp.Key;
+                var text = kvp.Value;
+
+                // 判定レベル名からインデックスを取得
+                var index = levelNames.FindIndex(name =>
+                    string.Equals(name, judgementLevel, StringComparison.OrdinalIgnoreCase));
+
+                if (index >= 0 && index < target.GetJudgementLevelCount())
                 {
-                    target.Contents.Add("");
+                    target.SetJudgementText(index, text);
+                    Debug.WriteLine($"            設定: [{index}] '{judgementLevel}' → '{text.Substring(0, Math.Min(30, text.Length))}...'");
+                }
+                else
+                {
+                    Debug.WriteLine($"            スキップ: '{judgementLevel}' (インデックス={index}, 最大={target.GetJudgementLevelCount()})");
                 }
             }
-
-            // 簡易的な判定レベルマッピング（後で改善）
-            var index = GetSimpleJudgementIndex(JudgementLevel);
-            if (index >= 0 && index < target.Contents.Count)
-            {
-                target.Contents[index] = text;
-            }
-        }
-
-        /// <summary>
-        /// 簡易的な判定レベルインデックス取得（一時的な実装）
-        /// </summary>
-        private int GetSimpleJudgementIndex(string JudgementLevel)
-        {
-            var normalized = JudgementLevel.ToLower().Trim();
-
-            if (normalized.Contains("大成功") || normalized.Contains("critical"))
-                return 0;
-            if (normalized.Contains("成功") || normalized.Contains("success"))
-                return 1;
-            if (normalized.Contains("失敗") || normalized.Contains("failure"))
-                return 2;
-            if (normalized.Contains("大失敗") || normalized.Contains("fumble"))
-                return 3;
-
-            return -1; // 不明な場合
-        }
-
-        /// <summary>
-        /// シーンに項目を追加
-        /// </summary>
-        private void AddItemToScene(Scene scene, IJudgementTarget target)
-        {
-            if (scene is SecretDistributionScene secretScene && target is JudgementTarget variableItem)
-            {
-                // 秘匿シーンの場合はプレイヤー項目として追加
-                secretScene.PlayerItems[itemName] = variableItem;
-            }
-
-            // 通常の項目リストにも追加
-            scene.JudgementTarget.Add(target);
         }
     }
 }

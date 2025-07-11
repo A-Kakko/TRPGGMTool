@@ -2,7 +2,7 @@
 using TRPGGMTool.ViewModels;
 using TRPGGMTool.Services;
 using TRPGGMTool.Services.FileIO;
-using TRPGGMTool.Models.Parsing;
+using TRPGGMTool.Models.DataAccess.Parsing;
 using TRPGGMTool.Converters;
 
 namespace TRPGGMTool

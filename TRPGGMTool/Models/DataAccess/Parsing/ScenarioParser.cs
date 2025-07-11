@@ -5,14 +5,15 @@ using System.Text;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.DataAccess.ParseData;
-using TRPGGMTool.Models.Parsing;
+using TRPGGMTool.Models.DataAccess.Parsing;
 using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.Settings;
 using TRPGGMTool.Services.Parsers;
 using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.Models.DataAccess;
 
-namespace TRPGGMTool.Models.Parsing
+namespace TRPGGMTool.Models.DataAccess.Parsing
 {
     /// <summary>
     /// Markdownテキストのパース専用クラス
@@ -48,10 +49,8 @@ namespace TRPGGMTool.Models.Parsing
         }
 
         /// <summary>
-        /// Markdownテキストからシナリオを解析（ファイルI/O削除）
+        /// Markdownテキストからシナリオを解析（段階的パース対応）
         /// </summary>
-        /// <param name="markdownContent">解析対象のMarkdownテキスト</param>
-        /// <returns>解析結果</returns>
         public ScenarioParseResults ParseFromText(string markdownContent)
         {
             var results = new ScenarioParseResults();
@@ -66,26 +65,212 @@ namespace TRPGGMTool.Models.Parsing
 
                 var lines = markdownContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-                // タイトル解析
+                Debug.WriteLine("=== 段階的パース開始 ===");
+                Debug.WriteLine($"総行数: {lines.Length}");
+
+                // Step 1: タイトル解析
                 var titleResult = ParseTitle(lines);
                 results.Title = titleResult.title;
+                Debug.WriteLine($"タイトル: '{results.Title}'");
 
-                // 各セクション解析
-                var sectionResults = ParseAllSections(lines);
+                // Step 2: メタデータとゲーム設定を先に解析
+                Debug.WriteLine("Step 2: メタデータ・ゲーム設定解析開始");
+                var preliminaryResults = ParseMetadataAndGameSettings(lines);
+                results.Metadata = preliminaryResults.metadata;
+                results.GameSettings = preliminaryResults.gameSettings;
+                results.Errors.AddRange(preliminaryResults.errors);
+                results.Warnings.AddRange(preliminaryResults.warnings);
 
-                // 結果を統合
-                results.Metadata = sectionResults.metadata;
-                results.GameSettings = sectionResults.gameSettings;
-                results.Scenes = sectionResults.scenes;
-                results.Errors.AddRange(sectionResults.errors);
-                results.Warnings.AddRange(sectionResults.warnings);
+                Debug.WriteLine($"メタデータ取得: {results.Metadata != null}");
+                Debug.WriteLine($"ゲーム設定取得: {results.GameSettings != null}");
 
+                // Step 3: GameSettingsが取得できた場合のみシーンを解析
+                if (results.GameSettings != null)
+                {
+                    Debug.WriteLine("Step 3: シーン解析開始（GameSettings使用）");
+                    var sceneResults = ParseScenesWithGameSettings(lines, results.GameSettings);
+                    results.Scenes = sceneResults.scenes;
+                    results.Errors.AddRange(sceneResults.errors);
+                    results.Warnings.AddRange(sceneResults.warnings);
+                    Debug.WriteLine($"シーン数: {results.Scenes.Count}");
+                }
+                else
+                {
+                    Debug.WriteLine("Step 3: GameSettingsが取得できないため、シーンのパースをスキップ");
+                    results.Warnings.Add("GameSettingsが取得できないため、シーンのパースをスキップしました");
+                }
+
+                Debug.WriteLine("=== 段階的パース完了 ===");
                 return results;
             }
             catch (Exception ex)
             {
+                Debug.WriteLine($"パースエラー: {ex.Message}");
                 results.Errors.Add($"パース中に予期しないエラー: {ex.Message}");
                 return results;
+            }
+        }
+
+        /// <summary>
+        /// メタデータとゲーム設定を優先的に解析
+        /// </summary>
+        private (ScenarioMetadata metadata, GameSettings gameSettings, List<string> errors, List<string> warnings)
+            ParseMetadataAndGameSettings(string[] lines)
+        {
+            ScenarioMetadata metadata = null;
+            GameSettings gameSettings = null;
+            var errors = new List<string>();
+            var warnings = new List<string>();
+
+            int currentIndex = 0;
+
+            // タイトルをスキップ
+            var titleResult = ParseTitle(lines);
+            currentIndex = titleResult.nextIndex;
+
+            Debug.WriteLine($"メタデータ・ゲーム設定解析開始位置: {currentIndex}");
+
+            while (currentIndex < lines.Length)
+            {
+                var line = lines[currentIndex].Trim();
+
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    currentIndex++;
+                    continue;
+                }
+
+                Debug.WriteLine($"[{currentIndex}] 解析中: '{line}'");
+
+                // メタデータパーサーを探して実行
+                var metadataParser = _sectionParsers.OfType<MetadataParser>().FirstOrDefault();
+                if (metadataParser?.CanHandle(line) == true)
+                {
+                    Debug.WriteLine("  → メタデータパーサーで処理");
+                    var result = metadataParser.ParseSection(lines, currentIndex + 1);
+                    if (result.isSuccess && result.Data is ScenarioMetadataData metadataData)
+                    {
+                        metadata = new ScenarioMetadata(metadataData);
+                        Debug.WriteLine("  → メタデータ解析成功");
+                    }
+                    else
+                    {
+                        errors.Add($"メタデータパース失敗: {result.ErrorMessage}");
+                        Debug.WriteLine($"  → メタデータ解析失敗: {result.ErrorMessage}");
+                    }
+                    currentIndex = result.NextIndex;
+                    continue;
+                }
+
+                // ゲーム設定パーサーを探して実行
+                var gameSettingsParser = _sectionParsers.OfType<GameSettingsParser>().FirstOrDefault();
+                if (gameSettingsParser?.CanHandle(line) == true)
+                {
+                    Debug.WriteLine("  → ゲーム設定パーサーで処理");
+                    var result = gameSettingsParser.ParseSection(lines, currentIndex + 1);
+                    if (result.isSuccess && result.Data is GameSettingsData gameSettingsData)
+                    {
+                        gameSettings = new GameSettings(gameSettingsData);
+                        Debug.WriteLine("  → ゲーム設定解析成功");
+                    }
+                    else
+                    {
+                        errors.Add($"ゲーム設定パース失敗: {result.ErrorMessage}");
+                        Debug.WriteLine($"  → ゲーム設定解析失敗: {result.ErrorMessage}");
+                    }
+                    currentIndex = result.NextIndex;
+                    continue;
+                }
+
+                // シーンセクション発見時は処理を終了
+                var scenesParser = _sectionParsers.OfType<ScenesParser>().FirstOrDefault();
+                if (scenesParser?.CanHandle(line) == true)
+                {
+                    Debug.WriteLine("  → シーンセクション発見、メタデータ解析終了");
+                    break;
+                }
+
+                Debug.WriteLine("  → 未処理行");
+                currentIndex++;
+            }
+
+            Debug.WriteLine($"メタデータ・ゲーム設定解析完了: metadata={metadata != null}, gameSettings={gameSettings != null}");
+            return (metadata, gameSettings, errors, warnings);
+        }
+
+        /// <summary>
+        /// GameSettingsを使ってシーンを解析
+        /// </summary>
+        private (List<Scene> scenes, List<string> errors, List<string> warnings)
+            ParseScenesWithGameSettings(string[] lines, GameSettings gameSettings)
+        {
+            var scenes = new List<Scene>();
+            var errors = new List<string>();
+            var warnings = new List<string>();
+
+            int currentIndex = 0;
+
+            Debug.WriteLine("シーンセクション検索開始");
+
+            // シーンセクションを探す
+            while (currentIndex < lines.Length)
+            {
+                var line = lines[currentIndex].Trim();
+
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    currentIndex++;
+                    continue;
+                }
+
+                var scenesParser = _sectionParsers.OfType<ScenesParser>().FirstOrDefault();
+                if (scenesParser?.CanHandle(line) == true)
+                {
+                    Debug.WriteLine($"[{currentIndex}] シーンセクション発見: '{line}'");
+                    // GameSettingsを渡してシーンパースを実行
+                    var result = ParseScenesWithSettings(scenesParser, lines, currentIndex + 1, gameSettings);
+                    scenes.AddRange(result.scenes);
+                    errors.AddRange(result.errors);
+                    warnings.AddRange(result.warnings);
+                    break;
+                }
+
+                currentIndex++;
+            }
+
+            Debug.WriteLine($"シーン解析完了: {scenes.Count}個のシーン");
+            return (scenes, errors, warnings);
+        }
+
+        /// <summary>
+        /// GameSettings付きでシーンパーサーを実行
+        /// </summary>
+        private (List<Scene> scenes, List<string> errors, List<string> warnings)
+            ParseScenesWithSettings(ScenesParser scenesParser, string[] lines, int startIndex, GameSettings gameSettings)
+        {
+            try
+            {
+                Debug.WriteLine("ScenesParserにGameSettings設定");
+                // ScenesParserにGameSettingsを設定
+                scenesParser.SetGameSettings(gameSettings);
+
+                var result = scenesParser.ParseSection(lines, startIndex);
+
+                if (result.isSuccess && result.Data is List<Scene> scenes)
+                {
+                    Debug.WriteLine($"シーンパース成功: {scenes.Count}個");
+                    return (scenes, new List<string>(), new List<string>());
+                }
+                else
+                {
+                    Debug.WriteLine($"シーンパース失敗: {result.ErrorMessage}");
+                    return (new List<Scene>(), new List<string> { result.ErrorMessage }, new List<string>());
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"シーンパース例外: {ex.Message}");
+                return (new List<Scene>(), new List<string> { $"シーンパース中にエラー: {ex.Message}" }, new List<string>());
             }
         }
 

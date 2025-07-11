@@ -4,7 +4,7 @@ using System.Diagnostics;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Configuration;
 using TRPGGMTool.Models.DataAccess.ParseData;
-using TRPGGMTool.Models.Parsing;
+using TRPGGMTool.Models.DataAccess.Parsing;
 using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Settings;
 

@@ -2,7 +2,7 @@
 using TRPGGMTool.Interfaces.IServices;
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
-using TRPGGMTool.Models.Parsing;
+using TRPGGMTool.Models.DataAccess.Parsing;
 using TRPGGMTool.Services.FileIO;
 using TRPGGMTool.Models.ScenarioModels;
 

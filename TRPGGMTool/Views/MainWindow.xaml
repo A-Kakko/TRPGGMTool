@@ -29,13 +29,6 @@
             <Setter Property="MinWidth" Value="80"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
-
-        <!-- 選択状態のツールバーボタンスタイル -->
-        <Style x:Key="SelectedToolBarButtonStyle" TargetType="Button" BasedOn="{StaticResource ToolBarButtonStyle}">
-            <Setter Property="Background" Value="LightBlue"/>
-            <Setter Property="BorderBrush" Value="DarkBlue"/>
-            <Setter Property="BorderThickness" Value="2"/>
-        </Style>
     </Window.Resources>
 
     <Grid>
@@ -65,295 +58,301 @@
                 </MenuItem>
             </Menu>
 
-            <!-- ツールバー -->
-            <ToolBar DockPanel.Dock="Top" ToolBarTray.IsLocked="True">
-                <Label Content="表示モード:" VerticalAlignment="Center" FontWeight="Bold"/>
+            <!-- 上部ツールバー: モード切替 -->
+            <Border DockPanel.Dock="Top" Background="LightGray" Padding="10,5">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- 編集モードボタン -->
-                <Button Content="📝 編集モード" 
-                        Command="{Binding SetEditModeCommand}"
-                        ToolTip="編集モードに切り替え（すべての編集機能が有効）">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource ToolBarButtonStyle}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsEditMode}" Value="True">
-                                    <Setter Property="Background" Value="LightGreen"/>
-                                    <Setter Property="BorderBrush" Value="DarkGreen"/>
-                                    <Setter Property="BorderThickness" Value="2"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                    <TextBlock Grid.Column="0" Text="ファイル・設定メニュー編" 
+                              Style="{StaticResource HeaderTextStyle}" 
+                              VerticalAlignment="Center"/>
 
-                <!-- 閲覧モードボタン -->
-                <Button Content="👁️ 閲覧モード" 
-                        Command="{Binding SetViewModeCommand}"
-                        ToolTip="閲覧モードに切り替え（コピー機能のみ有効）">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource ToolBarButtonStyle}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsViewMode}" Value="True">
-                                    <Setter Property="Background" Value="LightBlue"/>
-                                    <Setter Property="BorderBrush" Value="DarkBlue"/>
-                                    <Setter Property="BorderThickness" Value="2"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                    <Separator Grid.Column="1" Margin="10,0"/>
 
-                <Separator/>
+                    <!-- モード切替ボタン -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <!-- 閲覧モードボタン -->
+                        <Button Content="閲覧モード" 
+                                Command="{Binding SetViewModeCommand}"
+                                Margin="5,0"
+                                Padding="15,5">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ToolBarButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsViewMode}" Value="True">
+                                            <Setter Property="Background" Value="LightBlue"/>
+                                            <Setter Property="BorderBrush" Value="DarkBlue"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
 
-                <!-- 現在のモード表示 -->
-                <Label Content="現在:" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding CurrentViewMode}" 
-                          VerticalAlignment="Center" 
-                          FontWeight="Bold"
-                          Foreground="DarkBlue"/>
+                        <!-- 編集モードボタン -->
+                        <Button Content="編集モード" 
+                                Command="{Binding SetEditModeCommand}"
+                                Margin="5,0"
+                                Padding="15,5">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ToolBarButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                            <Setter Property="Background" Value="LightGreen"/>
+                                            <Setter Property="BorderBrush" Value="DarkGreen"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
 
-                <Separator/>
+                    <!-- 未保存変更表示 -->
+                    <StackPanel Grid.Column="4" Orientation="Horizontal" 
+                               VerticalAlignment="Center"
+                               Visibility="{Binding HasUnsavedChanges, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Label Content="⚠️" VerticalAlignment="Center" Foreground="Orange"/>
+                        <Label Content="未保存の変更があります" VerticalAlignment="Center" Foreground="Orange" FontWeight="Bold"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-                <!-- 未保存変更表示 -->
-                <StackPanel Orientation="Horizontal" 
-                           VerticalAlignment="Center"
-                           Visibility="{Binding HasUnsavedChanges, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Label Content="⚠️" VerticalAlignment="Center" Foreground="Orange"/>
-                    <Label Content="未保存の変更があります" VerticalAlignment="Center" Foreground="Orange" FontWeight="Bold"/>
-                </StackPanel>
-            </ToolBar>
+            <!-- メインコンテンツエリア -->
+            <Grid DockPanel.Dock="Bottom">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- メインコンテンツ -->
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- シナリオ基本情報 -->
-                <GroupBox Grid.Row="0" Header="シナリオ情報" Style="{StaticResource SectionGroupBoxStyle}">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Label Grid.Row="0" Grid.Column="0" Content="タイトル:" />
-                        <TextBox Grid.Row="0" Grid.Column="1" 
-                                Text="{Binding ScenarioTitle, UpdateSourceTrigger=PropertyChanged}" 
-                                Margin="5"
-                                IsReadOnly="{Binding IsViewMode}"/>
-
-                        <Label Grid.Row="1" Grid.Column="0" Content="作成者:" />
-                        <TextBox Grid.Row="1" Grid.Column="1" 
-                                Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}" 
-                                Margin="5"
-                                IsReadOnly="{Binding IsViewMode}"/>
-
-                        <Label Grid.Row="2" Grid.Column="0" Content="説明:" />
-                        <TextBox Grid.Row="2" Grid.Column="1" 
-                                Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
-                                Margin="5" TextWrapping="Wrap" Height="60"
-                                IsReadOnly="{Binding IsViewMode}"/>
-                    </Grid>
-                </GroupBox>
-
-                <!-- ゲーム設定 -->
-                <GroupBox Grid.Row="1" Header="ゲーム設定" Style="{StaticResource SectionGroupBoxStyle}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- プレイヤー設定 -->
-                        <GroupBox Grid.Column="0" Header="プレイヤー" Margin="5">
-                            <StackPanel>
-                                <TextBlock Text="{Binding PlayerCount, StringFormat='プレイヤー数: {0}人'}" Margin="5"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <!-- 判定レベル設定 -->
-                        <GroupBox Grid.Column="1" Header="判定レベル" Margin="5">
-                            <StackPanel>
-                                <TextBlock Text="{Binding JudgementLevelCount, StringFormat='判定レベル数: {0}'}" Margin="5"/>
-                            </StackPanel>
-                        </GroupBox>
-                    </Grid>
-                </GroupBox>
-
-                <!-- シーン操作エリア -->
-                <GroupBox Grid.Row="2" Header="シーン" Style="{StaticResource SectionGroupBoxStyle}">
+                <!-- 左側: シーン選択リスト -->
+                <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="5">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <!-- シーン選択・ナビゲーション -->
-                        <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
-                            <Grid DataContext="{Binding SceneNavigation}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                        <!-- シーン選択ヘッダー -->
+                        <TextBlock Grid.Row="0" Text="ListBox(シーン選択)" 
+                                  Style="{StaticResource HeaderTextStyle}" 
+                                  Background="LightGray" 
+                                  Padding="10"/>
 
-                                <!-- シーン選択 -->
-                                <ComboBox Grid.Column="0" 
-                                         ItemsSource="{Binding Scenes}"
-                                         SelectedItem="{Binding SelectedScene}"
-                                         DisplayMemberPath="Name"
-                                         Margin="0,0,10,0"
-                                         MinHeight="25"/>
+                        <!-- シーン一覧 -->
+                        <ListBox Grid.Row="1" 
+                                DataContext="{Binding SceneNavigation}"
+                                ItemsSource="{Binding Scenes}"
+                                SelectedItem="{Binding SelectedScene}"
+                                DisplayMemberPath="Name"
+                                Margin="5"/>
+                    </Grid>
+                </Border>
 
-                                <!-- ナビゲーションボタン -->
-                                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                    <Button Content="前のシーン" 
-                                           Command="{Binding NavigatePreviousCommand}"
-                                           Margin="0,0,5,0" Padding="10,5"/>
-                                    <Button Content="次のシーン" 
-                                           Command="{Binding NavigateNextCommand}"
-                                           Margin="0,0,5,0" Padding="10,5"/>
-                                    <Button Content="削除" 
-                                           Command="{Binding DeleteSceneCommand}"
-                                           Padding="10,5"/>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
+                <!-- 右側: シーンコンテンツエリア -->
+                <Grid Grid.Column="1" Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                        <!-- シーンコンテンツ表示エリア -->
-                        <Grid Grid.Row="1" DataContext="{Binding SceneContent}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                    <!-- 上部: シーン操作ボタン群 -->
+                    <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,5">
+                        <StackPanel Orientation="Horizontal" DataContext="{Binding SceneNavigation}">
+                            <Button Content="シーンモード" Margin="0,0,5,0" Padding="10,5"/>
+                            <Button Content="前シーン" 
+                                   Command="{Binding NavigatePreviousCommand}"
+                                   Margin="0,0,5,0" Padding="10,5"/>
+                            <Button Content="次シーン" 
+                                   Command="{Binding NavigateNextCommand}"
+                                   Margin="0,0,5,0" Padding="10,5"/>
+                            <Button Content="シーン追加" Margin="0,0,5,0" Padding="10,5"/>
+                            <Button Content="名前を変更" Margin="0,0,5,0" Padding="10,5"/>
+                            <Button Content="削除" 
+                                   Command="{Binding DeleteSceneCommand}"
+                                   Padding="10,5"/>
+                        </StackPanel>
+                    </Border>
 
-                            <!-- 左側: 判定ボタン領域 -->
-                            <Border Grid.Column="0" 
-                                    BorderBrush="Gray" 
-                                    BorderThickness="1" 
-                                    Margin="0,0,10,0"
-                                    Visibility="{Binding JudgementControl.IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <StackPanel DataContext="{Binding JudgementControl}" Margin="5">
-                                        <TextBlock Text="判定レベル" Style="{StaticResource HeaderTextStyle}" HorizontalAlignment="Center"/>
+                    <!-- 下部: メインコンテンツ（3列構造） -->
+                    <Grid Grid.Row="1" DataContext="{Binding SceneContent}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                                        <ItemsControl ItemsSource="{Binding JudgementLevels}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Button Content="{Binding Name}"
-                                                           Command="{Binding DataContext.SelectJudgementCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                           CommandParameter="{Binding Index}"
-                                                           IsEnabled="{Binding IsEnabled}"
-                                                           Margin="0,2"
-                                                           Padding="5">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                                        <Setter Property="Background" Value="LightBlue"/>
-                                                                        <Setter Property="FontWeight" Value="Bold"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Button.Style>
-                                                    </Button>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </Border>
+<!-- 左列: 項目選択ボタン（簡素化または削除） -->
+<Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-                            <!-- 右側: コンテンツ表示領域 -->
-                            <Grid Grid.Column="1">
+        <!-- 簡素化されたヘッダー -->
+        <TextBlock Grid.Row="0" Text="シーン情報" 
+                  Style="{StaticResource HeaderTextStyle}" 
+                  Background="LightGray" 
+                  Padding="10"/>
+
+        <!-- シーン詳細情報 -->
+        <StackPanel Grid.Row="1" Margin="10" DataContext="{Binding SceneNavigation}">
+            <TextBlock Text="{Binding SelectedScene.Name, StringFormat='シーン: {0}'}" 
+                      FontWeight="Bold"/>
+            <TextBlock Text="{Binding SelectedScene.Type, StringFormat='タイプ: {0}'}" 
+                      Margin="0,5,0,0"/>
+            <TextBlock Text="{Binding SelectedScene.Memo, StringFormat='メモ: {0}'}" 
+                      Margin="0,5,0,0"
+                      TextWrapping="Wrap"/>
+        </StackPanel>
+    </Grid>
+</Border>
+
+<!-- 中央列: 判定レベルボタン（削除） -->
+<!-- この列は新設計では不要なので削除 -->
+
+                        <!-- 右列: テキスト表示エリア -->
+                        <Border Grid.Column="2" BorderBrush="Gray" BorderThickness="1">
+                            <Grid DataContext="{Binding SceneContent}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- 項目選択ボタン -->
-                                <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,5">
-                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                                        <StackPanel Orientation="Horizontal" DataContext="{Binding ItemSelector}">
-                                            <TextBlock Text="{Binding ItemTypeName}" 
-                                                      VerticalAlignment="Center" 
-                                                      Margin="0,0,10,0"
-                                                      FontWeight="Bold"/>
+                                <!-- メモスペースヘッダー -->
+                                <TextBlock Grid.Row="0" Text="メモスペース" 
+                  Style="{StaticResource HeaderTextStyle}" 
+                  Background="LightGray" 
+                  Padding="10"/>
 
-                                            <ItemsControl ItemsSource="{Binding Items}">
-                                                <ItemsControl.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <StackPanel Orientation="Horizontal"/>
-                                                    </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Button Content="{Binding DisplayName}"
-                                                               Command="{Binding DataContext.SelectTargetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                               CommandParameter="{Binding Target}"
-                                                               Margin="0,0,5,0"
-                                                               Padding="10,5">
-                                                            <Button.Style>
-                                                                <Style TargetType="Button">
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                                            <Setter Property="Background" Value="LightGreen"/>
-                                                                            <Setter Property="FontWeight" Value="Bold"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Button.Style>
-                                                        </Button>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </ScrollViewer>
-                                </Border>
+                                <!-- 判定対象一覧（スクロール可能） -->
+                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="10">
+                                    <!-- 項目がない場合のメッセージ -->
+                                    <TextBlock Text="シーンを選択してください"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      FontSize="14"
+                      Foreground="Gray"
+                      Visibility="{Binding IsSceneSelected, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
 
-                                <!-- 項目名表示 -->
-                                <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,5">
-                                    <StackPanel Orientation="Horizontal" DataContext="{Binding ContentDisplay}">
-                                        <TextBlock Text="{Binding ItemTypeLabel}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="{Binding TargetName}" 
-                                                  VerticalAlignment="Center" 
-                                                  FontWeight="Bold"
-                                                  FontSize="14"/>
-                                    </StackPanel>
-                                </Border>
+                                    <!-- 判定対象表示項目一覧 -->
+                                    <ItemsControl ItemsSource="{Binding JudgementTargetDisplayItems}"
+                         Visibility="{Binding IsSceneSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <!-- 各判定対象のブロック -->
+                                                <Border BorderBrush="LightGray" BorderThickness="1" Margin="0,5" Padding="10">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="250"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
 
-                                <!-- コンテンツ表示 -->
-                                <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,5">
-                                    <ScrollViewer DataContext="{Binding ContentDisplay}">
-                                        <TextBlock Text="{Binding DisplayText}"
-                                                  TextWrapping="Wrap"
-                                                  Padding="15"
-                                                  FontSize="12"
-                                                  LineHeight="20"
-                                                  Background="White"/>
-                                    </ScrollViewer>
-                                </Border>
+                                                        <!-- 判定対象名 -->
+                                                        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                                          Text="{Binding TargetName}" 
+                                          FontWeight="Bold" 
+                                          FontSize="14"
+                                          Margin="0,0,0,10"/>
 
-                                <!-- コピーボタン -->
-                                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Button Content="📋 コピー" 
-                                           Command="{Binding ContentDisplay.CopyTextCommand}"
-                                           Padding="15,5"
-                                           Margin="5"/>
-                                </StackPanel>
+                                                        <!-- 左側: 判定レベルボタン縦並び -->
+                                                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0"
+                                           Visibility="{Binding HasJudgementLevels, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                            <TextBlock Text="判定レベル" FontWeight="Bold" Margin="0,0,0,5"/>
+                                                            <ItemsControl ItemsSource="{Binding JudgementLevels}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Button Content="{Binding Name}"
+                                                       Command="{Binding SelectCommand}"
+                                                       Margin="0,2"
+                                                       Padding="15,8"
+                                                       HorizontalAlignment="Stretch"
+                                                       IsEnabled="{Binding IsEnabled}">
+                                                                            <Button.Style>
+                                                                                <Style TargetType="Button">
+                                                                                    <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                                            <Setter Property="Background" Value="LightBlue"/>
+                                                                                            <Setter Property="FontWeight" Value="Bold"/>
+                                                                                        </DataTrigger>
+                                                                                    </Style.Triggers>
+                                                                                </Style>
+                                                                            </Button.Style>
+                                                                        </Button>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+
+                                                        <!-- 右側: 名前とテキスト欄 -->
+                                                        <Grid Grid.Row="1" Grid.Column="1">
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="*"/>
+                                                            </Grid.RowDefinitions>
+
+                                                            <!-- 項目名表示 -->
+                                                            <TextBlock Grid.Row="0" 
+                                              Text="{Binding DisplayName}" 
+                                              FontWeight="Bold"
+                                              Margin="0,0,0,5"/>
+
+                                                            <!-- テキスト表示/編集エリア（モード切替対応） -->
+                                                            <Border Grid.Row="1" 
+                                           BorderBrush="Gray" 
+                                           BorderThickness="1" 
+                                           Background="White"
+                                           MinHeight="100">
+
+                                                                <!-- 編集モード: TextBox -->
+                                                                <TextBox Text="{Binding CurrentDisplayText, UpdateSourceTrigger=PropertyChanged}"
+                                                TextWrapping="Wrap"
+                                                Padding="10"
+                                                FontSize="12"
+                                                AcceptsReturn="True"
+                                                VerticalScrollBarVisibility="Auto"
+                                                Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                                                                <!-- 閲覧モード: クリック可能TextBlock -->
+                                                                <Button Background="Transparent"
+                                               BorderThickness="0"
+                                               HorizontalContentAlignment="Stretch"
+                                               VerticalContentAlignment="Stretch"
+                                               Command="{Binding CopyTextCommand}"
+                                               Cursor="Hand"
+                                               ToolTip="クリックでコピー"
+                                               Visibility="{Binding IsViewMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                    <ScrollViewer>
+                                                                        <TextBlock Text="{Binding CurrentDisplayText}"
+                                                          TextWrapping="Wrap"
+                                                          Padding="10"
+                                                          FontSize="12"
+                                                          LineHeight="18"/>
+                                                                    </ScrollViewer>
+                                                                </Button>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
                             </Grid>
-                        </Grid>
+                        </Border>
                     </Grid>
-                </GroupBox>
+                </Grid>
             </Grid>
         </DockPanel>
     </Grid>

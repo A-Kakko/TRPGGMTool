@@ -221,14 +221,31 @@ namespace TRPGGMTool.ViewModels
         {
             if (_currentScene is not NarrativeScene narrativeScene) return;
 
-            var buttonViewModel = new ItemButtonViewModel
+            // 複数の情報項目をそれぞれボタンとして追加
+            foreach (var narrativeTarget in narrativeScene.InformationItems)
             {
-                Target = narrativeScene.NarrativeTarget,
-                DisplayName = "内容", // 固定名
-                IsSelected = false,
-                IsEnabled = AreItemButtonsEnabled
-            };
-            Items.Add(buttonViewModel);
+                var buttonViewModel = new ItemButtonViewModel
+                {
+                    Target = narrativeTarget.GetInnerTarget(), // 内部のJudgementTargetを取得
+                    DisplayName = narrativeTarget.Name, // 項目名（"古城の歴史"、"重要NPC: 村長"など）
+                    IsSelected = false,
+                    IsEnabled = AreItemButtonsEnabled
+                };
+                Items.Add(buttonViewModel);
+            }
+
+            // 項目がない場合はプレースホルダーを追加
+            if (narrativeScene.InformationItems.Count == 0)
+            {
+                var placeholderViewModel = new ItemButtonViewModel
+                {
+                    Target = null, // プレースホルダーなのでnull
+                    DisplayName = "(項目なし)", // プレースホルダー表示
+                    IsSelected = false,
+                    IsEnabled = false // プレースホルダーは無効
+                };
+                Items.Add(placeholderViewModel);
+            }
         }
 
         /// <summary>

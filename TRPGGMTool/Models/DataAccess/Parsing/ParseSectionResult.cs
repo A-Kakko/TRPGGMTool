@@ -2,7 +2,8 @@
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.Settings;
 using TRPGGMTool.Models.ScenarioModels;
-namespace TRPGGMTool.Models.Parsing
+
+namespace TRPGGMTool.Models.DataAccess.Parsing
 {
     /// <summary>
     /// パーサーの解析結果

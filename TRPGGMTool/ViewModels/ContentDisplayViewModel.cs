@@ -4,6 +4,7 @@ using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
+using TRPGGMTool.ViewModels.Events;
 
 namespace TRPGGMTool.ViewModels
 {
@@ -171,11 +172,42 @@ namespace TRPGGMTool.ViewModels
             {
                 SceneType.SecretDistribution when _currentScene is SecretDistributionScene secretScene =>
                     secretScene.GetPlayerNameByTarget((JudgementTarget)_currentTarget) ?? "不明",
-                SceneType.Narrative => "内容",
-                SceneType.Exploration => $"場所", // 場所名がないので仮
+                SceneType.Narrative when _currentScene is NarrativeScene narrativeScene =>
+                    GetNarrativeTargetName(narrativeScene, _currentTarget),
+                SceneType.Exploration => GetExplorationTargetName(),
                 _ => "項目"
             };
         }
+
+        /// <summary>
+        /// 地の文シーンでの項目名を取得
+        /// </summary>
+        private string GetNarrativeTargetName(NarrativeScene narrativeScene, IJudgementTarget target)
+        {
+            // NarrativeTargetから対応する名前を検索
+            foreach (var narrativeTarget in narrativeScene.InformationItems)
+            {
+                if (narrativeTarget.GetInnerTarget() == target)
+                {
+                    return narrativeTarget.Name;
+                }
+            }
+            return "項目";
+        }
+
+        /// <summary>
+        /// 探索シーンでの項目名を取得
+        /// </summary>
+        private string GetExplorationTargetName()
+        {
+            // JudgementTargetのNameプロパティを使用
+            if (_currentTarget is JudgementTarget judgementTarget)
+            {
+                return !string.IsNullOrWhiteSpace(judgementTarget.Name) ? judgementTarget.Name : "場所";
+            }
+            return "場所";
+        }
+
 
         /// <summary>
         /// 表示用テキストを取得
@@ -231,19 +263,6 @@ namespace TRPGGMTool.ViewModels
         public event EventHandler<CopyErrorEventArgs>? CopyError;
 
         #endregion
-    }
-
-    /// <summary>
-    /// テキストコピー完了イベントの引数
-    /// </summary>
-    public class TextCopiedEventArgs : EventArgs
-    {
-        public string CopiedText { get; }
-
-        public TextCopiedEventArgs(string copiedText)
-        {
-            CopiedText = copiedText;
-        }
     }
 
     /// <summary>

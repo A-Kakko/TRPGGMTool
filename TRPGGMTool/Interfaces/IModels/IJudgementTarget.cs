@@ -11,6 +11,11 @@
         string Id { get; set; }
 
         /// <summary>
+        /// 判定対象の名前
+        /// </summary>
+        string Name { get; set; }
+
+        /// <summary>
         /// 判定レベルを持つかどうか
         /// </summary>
         bool HasJudgementLevels { get; }

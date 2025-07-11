@@ -2,7 +2,7 @@
 using TRPGGMTool.Interfaces.IModels;
 using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.DataAccess.ParseData;
-using TRPGGMTool.Models.Parsing;
+using TRPGGMTool.Models.DataAccess.Parsing;
 using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Validation;
 using TRPGGMTool.Services;
@@ -127,7 +127,7 @@ namespace TRPGGMTool.Models.DataAccess
         /// <summary>
         /// パース結果からScenarioオブジェクトを構築
         /// </summary>
-        private async Task<Scenario?> BuildScenarioFromParseResults(Models.Parsing.ScenarioParseResults parseResults)
+        private async Task<Scenario?> BuildScenarioFromParseResults(Models.DataAccess.Parsing.ScenarioParseResults parseResults)
         {
             // メタデータエラーは致命的として扱う
             if (HasCriticalMetadataErrors(parseResults))
@@ -182,7 +182,7 @@ namespace TRPGGMTool.Models.DataAccess
         /// <summary>
         /// 致命的なメタデータエラーがあるかチェック
         /// </summary>
-        private bool HasCriticalMetadataErrors(Models.Parsing.ScenarioParseResults parseResults)
+        private bool HasCriticalMetadataErrors(Models.DataAccess.Parsing.ScenarioParseResults parseResults)
         {
             // エラーの中にメタデータ関連のものがあるかチェック
             if (parseResults.Errors != null)
@@ -203,7 +203,7 @@ namespace TRPGGMTool.Models.DataAccess
         /// <summary>
         /// 警告メッセージを収集
         /// </summary>
-        private List<string> CollectWarnings(Models.Parsing.ScenarioParseResults parseResults)
+        private List<string> CollectWarnings(Models.DataAccess.Parsing.ScenarioParseResults parseResults)
         {
             var warnings = new List<string>();
 

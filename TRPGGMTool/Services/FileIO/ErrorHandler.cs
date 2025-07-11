@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using TRPGGMTool.Models.Common;
-using TRPGGMTool.Models.Parsing;
+using TRPGGMTool.Models.DataAccess.Parsing;
 
 namespace TRPGGMTool.Services.FileIO
 {

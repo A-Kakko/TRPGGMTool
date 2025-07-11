@@ -10,6 +10,7 @@ using TRPGGMTool.Models.Common;
 using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
 using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.ScenarioModels;
+using TRPGGMTool.ViewModels;
 
 namespace TRPGGMTool.ViewModels
 {
@@ -364,13 +365,13 @@ namespace TRPGGMTool.ViewModels
             SceneContent?.SetCurrentScene(e.NewScene);
             System.Diagnostics.Debug.WriteLine($"シーン選択変更: {e.NewScene?.Name ?? "なし"}");
         }
-
         /// <summary>
         /// テキストコピー完了時の処理
         /// </summary>
         private void OnTextCopied(object? sender, TextCopiedEventArgs e)
         {
             System.Diagnostics.Debug.WriteLine($"テキストコピー完了: {e.CopiedText.Substring(0, Math.Min(50, e.CopiedText.Length))}...");
+            // 必要に応じてステータスバーに表示など
         }
 
         /// <summary>

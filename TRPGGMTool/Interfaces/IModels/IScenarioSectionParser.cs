@@ -1,4 +1,4 @@
-﻿using TRPGGMTool.Models.Parsing;
+﻿using TRPGGMTool.Models.DataAccess.Parsing;
 
 namespace TRPGGMTool.Interfaces.IModels
 {

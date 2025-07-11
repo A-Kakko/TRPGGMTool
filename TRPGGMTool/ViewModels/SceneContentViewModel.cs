@@ -1,16 +1,23 @@
-﻿using TRPGGMTool.Models.ScenarioModels;
+﻿using System.Collections.ObjectModel;
+using System.Linq;
+using TRPGGMTool.Interfaces.IModels;
+using TRPGGMTool.Models.Common;
+using TRPGGMTool.Models.ScenarioModels;
 using TRPGGMTool.Models.ScenarioModels.Targets.JudgementTargets;
+using TRPGGMTool.Models.Scenes;
 using TRPGGMTool.Models.Settings;
+using TRPGGMTool.ViewModels.Events;
 
 namespace TRPGGMTool.ViewModels
 {
     /// <summary>
     /// シーンコンテンツ表示エリア全体を統括するViewModel
-    /// 判定制御、項目選択、コンテンツ表示の連携を管理
+    /// 複数の判定対象を一括表示・管理する新しい設計
     /// </summary>
-    public class SceneContentViewModel : ViewModelBase
+    public class SceneContentViewModel : ViewModeAwareViewModelBase
     {
         private readonly Scenario _scenario;
+        private Scene? _currentScene;
 
         /// <summary>
         /// コンストラクタ
@@ -19,32 +26,34 @@ namespace TRPGGMTool.ViewModels
         public SceneContentViewModel(Scenario scenario)
         {
             _scenario = scenario ?? throw new ArgumentNullException(nameof(scenario));
-
-            // 子ViewModelを初期化
-            JudgementControl = new JudgementControlViewModel(_scenario.GameSettings.JudgementLevelSettings);
-            ItemSelector = new ItemSelectorViewModel();
-            ContentDisplay = new ContentDisplayViewModel();
-
-            // イベント連携を設定
-            SetupEventHandlers();
+            JudgementTargetDisplayItems = new ObservableCollection<JudgementTargetDisplayViewModel>();
         }
 
         #region プロパティ
 
         /// <summary>
-        /// 判定ボタン制御ViewModel
+        /// 判定対象表示項目一覧
         /// </summary>
-        public JudgementControlViewModel JudgementControl { get; }
+        public ObservableCollection<JudgementTargetDisplayViewModel> JudgementTargetDisplayItems { get; set; }
 
         /// <summary>
-        /// 項目選択ViewModel
+        /// 現在のシーン
         /// </summary>
-        public ItemSelectorViewModel ItemSelector { get; }
+        public Scene? CurrentScene
+        {
+            get => _currentScene;
+            private set => SetProperty(ref _currentScene, value);
+        }
 
         /// <summary>
-        /// コンテンツ表示ViewModel
+        /// 項目が存在するかどうか
         /// </summary>
-        public ContentDisplayViewModel ContentDisplay { get; }
+        public bool HasItems => JudgementTargetDisplayItems.Count > 0;
+
+        /// <summary>
+        /// シーンが選択されているかどうか
+        /// </summary>
+        public bool IsSceneSelected => CurrentScene != null;
 
         #endregion
 
@@ -54,82 +63,193 @@ namespace TRPGGMTool.ViewModels
         /// 現在のシーンを設定（全体に反映）
         /// </summary>
         /// <param name="scene">現在のシーン</param>
-        public void SetCurrentScene(Models.Scenes.Scene? scene)
+        public void SetCurrentScene(Scene? scene)
         {
+            CurrentScene = scene;
             System.Diagnostics.Debug.WriteLine($"[SceneContent] シーン設定: {scene?.Name ?? "null"}");
 
-            // 各ViewModelにシーン設定
-            JudgementControl.SetCurrentScene(scene);
-            ItemSelector.SetCurrentScene(scene);
-            ContentDisplay.SetCurrentScene(scene);
+            // 判定対象表示項目を更新
+            UpdateJudgementTargetDisplayItems(scene);
 
-            UpdateContentDisplay();
+            // プロパティ変更通知
+            OnPropertyChanged(nameof(HasItems));
+            OnPropertyChanged(nameof(IsSceneSelected));
         }
 
         /// <summary>
-        /// イベントハンドラーを設定
+        /// 判定対象表示項目を更新
         /// </summary>
-        private void SetupEventHandlers()
+        /// <param name="scene">現在のシーン</param>
+        private void UpdateJudgementTargetDisplayItems(Scene? scene)
         {
-            // 判定レベル変更時の処理
-            JudgementControl.JudgementChanged += OnJudgementChanged;
+            // 既存のイベントハンドラーを解除
+            CleanupDisplayItems();
 
-            // 項目選択変更時の処理
-            ItemSelector.TargetChanged += OnTargetChanged;
+            JudgementTargetDisplayItems.Clear();
 
-            // コピー完了・エラー時の処理（必要に応じて上位に通知）
-            ContentDisplay.TextCopied += OnTextCopied;
-            ContentDisplay.CopyError += OnCopyError;
+            if (scene == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[SceneContent] シーンがnullのため項目表示をクリア");
+                return;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[SceneContent] 判定対象数: {scene.JudgementTarget.Count}");
+
+            // シーンタイプに応じて項目を作成
+            switch (scene.Type)
+            {
+                case SceneType.Narrative:
+                    CreateNarrativeDisplayItems(scene as NarrativeScene);
+                    break;
+                case SceneType.Exploration:
+                    CreateExplorationDisplayItems(scene as ExplorationScene);
+                    break;
+                case SceneType.SecretDistribution:
+                    CreateSecretDistributionDisplayItems(scene as SecretDistributionScene);
+                    break;
+                default:
+                    CreateGenericDisplayItems(scene);
+                    break;
+            }
+
+            // プレースホルダーの追加（項目がない場合）
+            if (JudgementTargetDisplayItems.Count == 0)
+            {
+                CreatePlaceholderItem(scene.Type);
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[SceneContent] 表示項目作成完了: {JudgementTargetDisplayItems.Count}個");
         }
 
         /// <summary>
-        /// 判定レベル変更時の処理
+        /// 地の文シーンの表示項目を作成
         /// </summary>
-        private void OnJudgementChanged(object? sender, JudgementChangedEventArgs e)
+        private void CreateNarrativeDisplayItems(NarrativeScene? narrativeScene)
         {
-            ContentDisplay.SetCurrentJudgement(e.JudgementIndex);
+            if (narrativeScene == null) return;
+
+            foreach (var narrativeTarget in narrativeScene.InformationItems)
+            {
+                var displayItem = CreateDisplayItem(
+                    narrativeTarget.GetInnerTarget(),
+                    narrativeTarget.Name,
+                    "情報項目"
+                );
+                JudgementTargetDisplayItems.Add(displayItem);
+            }
         }
 
         /// <summary>
-        /// 判定対象選択変更時の処理
+        /// 探索シーンの表示項目を作成
         /// </summary>
-        private void OnTargetChanged(object? sender, TargetChangedEventArgs e)
+        private void CreateExplorationDisplayItems(ExplorationScene? explorationScene)
         {
-            // 判定制御に現在の対象を設定
-            JudgementControl.SetCurrentTarget(e.NewTarget);
+            if (explorationScene == null) return;
 
-            // コンテンツ表示に現在の対象を設定
-            ContentDisplay.SetCurrentTarget(e.NewTarget);
+            var locations = explorationScene.GetAllLocations();
+            for (int i = 0; i < locations.Count; i++)
+            {
+                var target = locations[i];
+                var locationName = !string.IsNullOrWhiteSpace(target.Name) ? target.Name : $"場所{i + 1}";
+
+                var displayItem = CreateDisplayItem(target, locationName, "調査場所");
+                JudgementTargetDisplayItems.Add(displayItem);
+            }
         }
 
         /// <summary>
-        /// コンテンツ表示を更新
+        /// 秘匿配布シーンの表示項目を作成
         /// </summary>
-        private void UpdateContentDisplay()
+        private void CreateSecretDistributionDisplayItems(SecretDistributionScene? secretScene)
         {
-            // 現在の判定レベルをコンテンツ表示に反映
-            ContentDisplay.SetCurrentJudgement(JudgementControl.SelectedJudgementIndex);
+            if (secretScene == null) return;
 
-            // 現在の項目をコンテンツ表示に反映
-            ContentDisplay.SetCurrentTarget(ItemSelector.SelectedTarget);
+            foreach (var kvp in secretScene.PlayerTargets)
+            {
+                var displayItem = CreateDisplayItem(kvp.Value, kvp.Key, "対象プレイヤー");
+                JudgementTargetDisplayItems.Add(displayItem);
+            }
         }
 
         /// <summary>
-        /// テキストコピー完了時の処理
+        /// 汎用的な表示項目を作成
         /// </summary>
-        private void OnTextCopied(object? sender, TextCopiedEventArgs e)
+        private void CreateGenericDisplayItems(Scene scene)
         {
-            // 上位ViewModelやUIに通知（必要に応じて）
-            TextCopied?.Invoke(this, e);
+            for (int i = 0; i < scene.JudgementTarget.Count; i++)
+            {
+                var target = scene.JudgementTarget[i];
+                var displayName = $"項目{i + 1}";
+
+                var displayItem = CreateDisplayItem(target, displayName, "項目");
+                JudgementTargetDisplayItems.Add(displayItem);
+            }
         }
 
         /// <summary>
-        /// コピーエラー時の処理
+        /// プレースホルダー項目を作成
         /// </summary>
-        private void OnCopyError(object? sender, CopyErrorEventArgs e)
+        private void CreatePlaceholderItem(SceneType sceneType)
         {
-            // 上位ViewModelやUIに通知（必要に応じて）
-            CopyError?.Invoke(this, e);
+            var placeholderText = sceneType switch
+            {
+                SceneType.Narrative => "表示する情報項目がありません。\n編集モードで項目を追加してください。",
+                SceneType.Exploration => "表示する調査場所がありません。\n編集モードで場所を追加してください。",
+                SceneType.SecretDistribution => "表示するプレイヤー情報がありません。\n編集モードでプレイヤーを設定してください。",
+                _ => "表示する内容がありません。"
+            };
+
+            var placeholderItem = new JudgementTargetDisplayViewModel();
+            placeholderItem.Target = null;
+            placeholderItem.TargetName = "(項目なし)";
+            placeholderItem.DisplayName = "情報";
+            placeholderItem.CurrentDisplayText = placeholderText;
+            placeholderItem.SetViewMode(CurrentViewMode);
+
+            JudgementTargetDisplayItems.Add(placeholderItem);
+        }
+
+        /// <summary>
+        /// 表示項目を作成
+        /// </summary>
+        private JudgementTargetDisplayViewModel CreateDisplayItem(IJudgementTarget target, string targetName, string displayName)
+        {
+            var displayItem = new JudgementTargetDisplayViewModel();
+            displayItem.Target = target;
+            displayItem.TargetName = targetName;
+            displayItem.DisplayName = displayName;
+            displayItem.SetJudgementLevels(_scenario.GameSettings.JudgementLevelSettings);
+            displayItem.SetViewMode(CurrentViewMode);
+
+            // イベントハンドラーを設定
+            displayItem.TextCopied += OnTextCopied;
+
+            return displayItem;
+        }
+
+        /// <summary>
+        /// 表示項目のクリーンアップ
+        /// </summary>
+        private void CleanupDisplayItems()
+        {
+            foreach (var item in JudgementTargetDisplayItems)
+            {
+                item.TextCopied -= OnTextCopied;
+            }
+        }
+
+        /// <summary>
+        /// 表示モード変更時の処理
+        /// </summary>
+        protected override void OnViewModeChanged(ViewMode newMode)
+        {
+            // 全ての表示項目にモード変更を通知
+            foreach (var item in JudgementTargetDisplayItems)
+            {
+                item.SetViewMode(newMode);
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[SceneContent] モード変更: {newMode} - {JudgementTargetDisplayItems.Count}個の項目に通知");
         }
 
         /// <summary>
@@ -138,8 +258,13 @@ namespace TRPGGMTool.ViewModels
         /// <param name="gameSettings">新しいゲーム設定</param>
         public void UpdateGameSettings(GameSettings gameSettings)
         {
-            // 判定ボタンの再構築が必要な場合の処理
-            // 現在の実装では判定レベル設定は固定だが、将来の拡張に備える
+            // 全ての表示項目の判定レベルを更新
+            foreach (var item in JudgementTargetDisplayItems)
+            {
+                item.SetJudgementLevels(gameSettings.JudgementLevelSettings);
+            }
+
+            System.Diagnostics.Debug.WriteLine("[SceneContent] ゲーム設定更新完了");
         }
 
         /// <summary>
@@ -147,11 +272,8 @@ namespace TRPGGMTool.ViewModels
         /// </summary>
         public void Cleanup()
         {
-            // イベントハンドラーの解除
-            JudgementControl.JudgementChanged -= OnJudgementChanged;
-            ItemSelector.TargetChanged -= OnTargetChanged;
-            ContentDisplay.TextCopied -= OnTextCopied;
-            ContentDisplay.CopyError -= OnCopyError;
+            CleanupDisplayItems();
+            JudgementTargetDisplayItems.Clear();
         }
 
         #endregion
@@ -164,9 +286,13 @@ namespace TRPGGMTool.ViewModels
         public event EventHandler<TextCopiedEventArgs>? TextCopied;
 
         /// <summary>
-        /// コピーエラーイベント（上位への通知用）
+        /// テキストコピー完了時の処理
         /// </summary>
-        public event EventHandler<CopyErrorEventArgs>? CopyError;
+        private void OnTextCopied(object? sender, TextCopiedEventArgs e)
+        {
+            // 上位ViewModelに通知
+            TextCopied?.Invoke(this, e);
+        }
 
         #endregion
     }
